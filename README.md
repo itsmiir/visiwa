@@ -1,9 +1,3 @@
-# Fabric Example Mod
+# visiwa
 
-## Setup
-
-For setup instructions please see the [fabric wiki page](https://fabricmc.net/wiki/tutorial:setup) that relates to the IDE that you are using.
-
-## License
-
-This template is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.
+minecraft generates its worlds via simplex noise-- i.e., there is no rhyme or reason to the placement of biomes, besides "dissimilar biomes should not be right next to each other." this mod aims to change that.
