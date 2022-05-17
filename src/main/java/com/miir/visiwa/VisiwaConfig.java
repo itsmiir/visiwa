@@ -19,7 +19,7 @@ public class VisiwaConfig {
     public static final int K = 1; // probably get rid of this
     public static final boolean PIRATE_ADVENTURE = false; // arr
     public static final int SCALE_FACTOR = 4; // chunks per pixel
-    public static final int HEIGHTMAP_OCTAVES = 7;
+    public static final int HEIGHTMAP_OCTAVES = 6;
     public static final float THIRSTINESS = 0.1f;
     //    terrain constants, fiddling with these is not as fun as it might seem
     public static int ROCKINESS = 64;

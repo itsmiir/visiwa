@@ -12,7 +12,7 @@ package com.miir.visiwa;
 import com.miir.visiwa.world.gen.Atlas;
 import com.miir.visiwa.world.gen.AtlasHelper;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.tinyremapper.extension.mixin.common.Logger;
+import org.checkerframework.checker.units.qual.A;
 
 import java.io.IOException;
 import java.util.Random;
@@ -23,13 +23,17 @@ public class Visiwa implements ModInitializer {
     @Override
     public void onInitialize() {
         Random random = new Random();
-        for (int i = 0; i < 10; i++) {
-            Atlas atlas = new Atlas(random.nextLong(), 2, false, false, VisiwaConfig.WIDTH, VisiwaConfig.HEIGHT);
+        for (int i = 0; i < 1; i++) {
+            Atlas atlas = new Atlas(0, 2, false, VisiwaConfig.WIDTH, VisiwaConfig.HEIGHT);
             atlas.simplexTerrain();
             atlas.elevation();
-            atlas.continentiality();
+            atlas.continentalness();
+            atlas.temperature();
+            atlas.airflow();
             try {
-                atlas.drawMap(AtlasHelper.PARAM.CONTINENTALNESS);
+                atlas.drawMap(AtlasHelper.PARAM.AIRFLOW, "airflow" + COUNT);
+                atlas.drawMap(AtlasHelper.PARAM.ELEVATION, "elevation" + COUNT);
+                atlas.drawMap(AtlasHelper.PARAM.CONTINENTALNESS, "continentalness" + COUNT);
             } catch (IOException e) {
                 e.printStackTrace();
             }

@@ -50,6 +50,11 @@ public abstract class AtlasHelper {
         public int pv;// peaks/valleys
         public int w; // weirdness
         public AtlasPixel() {
+            this.a = 255;
+        }
+
+        public boolean isLand() {
+            return this.y > 127;
         }
     }
 
@@ -87,59 +92,58 @@ public abstract class AtlasHelper {
     }
 
 
-    public static Color colorMap(float h, PARAM p) {
-        int r, g, b;
+    public static int colorMap(float h, PARAM p) {
+        int r, g, b, rgb1, rgb2, rgb3, rgb4, rgb5, rgb6;
         switch (p) {
-            case ELEVATION:
-                if (h < -0.5f) {
-                    h += 0.5f;
-                    h *= 2f;
-                    r = clean(18*(-h) + 26*(1+h));
-                    g = clean(9*(-h) + 56*(1+h));
-                    b = clean(160*(-h) + 167*(1+h));
-                } else if (h <= 0) {
-                    h *= 2;
-                    r = clean(26*(-h) + 34*(1+h));
-                    g = clean(56*(-h) + 106*(1+h));
-                    b = clean(167*(-h) + 138*(1+h));
-                } else if (h < 0.5f) {
-                    h *= 2;
-                    r = clean(27*(1-h) + 155*(h));
-                    g = clean(124*(1-h) + 143*(h));
-                    b = clean(59*(1-h) + 78*(h));
-                } else {
-                    h -= 0.5;
-                    h *= 2;
-                    r = clean(155*(1-h) + 84*(h));
-                    g = clean(143*(1-h) + 72*(h));
-                    b = clean(78*(1-h) + 48*(h));
-                }
-                break;
-            case CONTINENTALNESS:
-                if (h < -0.5f) {
-                    h += 0.5f;
-                    h *= 2f;
-                    r = clean(18*(-h) + 26*(1+h));
-                    g = clean(9*(-h) + 56*(1+h));
-                    b = clean(160*(-h) + 167*(1+h));
-                } else if (h <= 0) {
-                    h *= 2;
-                    r = clean(26 * (-h) + 34 * (1 + h));
-                    g = clean(56 * (-h) + 106 * (1 + h));
-                    b = clean(167 * (-h) + 138 * (1 + h));
-                } else {
-                    r = clean(27*(1-h) + 200*(h));
-                    g = clean(124*(1-h) + 100*(h));
-                    b = clean(59*(1-h) + 0*(h));
-                }
-                break;
-            default:
-                r = 0;
-                g = 0;
-                b = 0;
+            case ELEVATION -> {
+                rgb1 = 0x1209A0;
+                rgb2 = 0x1A38A7;
+                rgb3 = 0x226A8A;
+                rgb4 = 0x1B7C3B;
+                rgb5 = 0x9B8F4E;
+                rgb6 = 0x544830;
+            }
+            case CONTINENTALNESS -> {
+                rgb1 = 0x1209A0;
+                rgb2 = 0x1A38A7;
+                rgb3 = 0x226A8A;
+                rgb4 = 0x1B7C3B;
+                rgb5 = 0xC86400;
+                rgb6 = 0xFF0000;
+            }
+            default -> {
+                rgb1 = 0x9451B3;
+                rgb2 = 0x6DC7C2;
+                rgb3 = 0x58964C;
+                rgb4 = 0x58964C;
+                rgb5 = 0xC5AB4D;
+                rgb6 = 0x814B50;
+            }
         }
-
-        return new Color(r, g, b);
+        if (h < -0.5f) {
+            h += 0.5f;
+            h *= 2f;
+            r = clean((rgb1 >> 16 & 0xFF)*(-h) +   (rgb2 >> 16 & 0xFF)*(1+h));
+            g = clean((rgb1 >> 8 & 0xFF)*(-h) +    (rgb2 >> 8 & 0xFF)*(1+h));
+            b = clean((rgb1 & 0xFF)*(-h) +         (rgb2 & 0xFF)*(1+h));
+        } else if (h <= 0) {
+            h *= 2;
+            r = clean((rgb2 >> 16 & 0xFF) * (-h) + (rgb3 >> 16 & 0xFF) * (1 + h));
+            g = clean((rgb2 >> 8 & 0xFF) * (-h) +  (rgb3 >> 8 & 0xFF) * (1 + h));
+            b = clean((rgb2 & 0xFF) * (-h) +       (rgb3 & 0xFF) * (1 + h));
+        } else if (h <= 0.5) {
+            h *= 2;
+            r = clean( (rgb4 >> 16 & 0xFF)*(1-h) + (rgb5 >> 16 & 0xFF)*(h));
+            g = clean((rgb4 >> 8 & 0xFF)*(1-h) +   (rgb5 >> 8 & 0xFF)*(h));
+            b = clean((rgb4 & 0xFF)*(1-h) +        (rgb5 & 0xFF)*(h));
+        } else {
+            h -= 0.5;
+            h *= 2;
+            r = clean((rgb5 >> 16 & 0xFF)*(1-h) +  (rgb6 >> 16 & 0xFF)*(h));
+            g = clean((rgb5 >> 8 & 0xFF)*(1-h) +   (rgb6 >> 8 & 0xFF)*(h));
+            b = clean((rgb5 & 0xFF)*(1-h) +        (rgb6 & 0xFF)*(h));
+        }
+        return r << 16 | g << 8 | b;
     }
 
     public static int clean(double x) {
