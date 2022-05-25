@@ -6,6 +6,8 @@
   "mixins": [
   ],
   "client": [
+    "client.ClientPlayNetworkHandlerMixin",
+    "client.InjectAtlasGeneratorMixin"
   ],
   "injectors": {
     "defaultRequire": 1
