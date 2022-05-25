@@ -21,15 +21,16 @@ public class VisiwaConfig {
     public static final int SCALE_FACTOR = 4; // chunks per pixel
     public static final int HEIGHTMAP_OCTAVES = 6;
     public static final float THIRSTINESS = 0.1f;
-    //    terrain constants, fiddling with these is not as fun as it might seem
-    public static int ROCKINESS = 64;
+    public static final int SCALE = 1; // how many chunks per pixel of the map
+
+    //    mountain constants, fiddling with these is not as fun as it might seem
     public static final float ROUNDNESS = .5f;
     public static final float SHARPNESS = 7f;
     public static final float BUBBLINESS = 4f;
     public static final float PYRAMIDNESS = ROUNDNESS+SHARPNESS+BUBBLINESS;
 
     public static final int SPIKINESS = 17;
-    public static int RANGINESS = 10;
+    public static int RANGINESS = 30;
     public static final int CRAGGLINESS = 40;
     public static final int FLATNESS = 18;
     public static final int APPALACHIANITY = 12;

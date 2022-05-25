@@ -9,36 +9,52 @@
 
 package com.miir.visiwa;
 
+import com.miir.visiwa.world.biome.source.VisiwaBiomeSource;
 import com.miir.visiwa.world.gen.Atlas;
 import com.miir.visiwa.world.gen.AtlasHelper;
+import com.miir.visiwa.world.gen.VisiwaChunkGenerator;
+import com.miir.visiwa.world.gen.VisiwaGen;
 import net.fabricmc.api.ModInitializer;
-import org.checkerframework.checker.units.qual.A;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
 
 import java.io.IOException;
-import java.util.Random;
 
 public class Visiwa implements ModInitializer {
+    public static final String ID = "visiwa";
+
 //    public static final Logger VISIWA_GENERATOR = new Logger(Logger.Level.INFO);
+
     public static int COUNT = 0;
+    //    public static final Random random = new Random();
+
+
+    public static Identifier id(String path) {
+        return new Identifier(ID, path);
+    }
+    public static final Atlas atlas = new Atlas(0, 2, false, VisiwaConfig.WIDTH, VisiwaConfig.HEIGHT);
     @Override
     public void onInitialize() {
-        Random random = new Random();
+        register();
         for (int i = 0; i < 1; i++) {
-            Atlas atlas = new Atlas(0, 2, false, VisiwaConfig.WIDTH, VisiwaConfig.HEIGHT);
-            atlas.simplexTerrain();
-            atlas.elevation();
-            atlas.continentalness();
-            atlas.temperature();
-            atlas.airflow();
+            atlas.draw();
             try {
-                atlas.drawMap(AtlasHelper.PARAM.AIRFLOW, "airflow" + COUNT);
-                atlas.drawMap(AtlasHelper.PARAM.ELEVATION, "elevation" + COUNT);
-                atlas.drawMap(AtlasHelper.PARAM.CONTINENTALNESS, "continentalness" + COUNT);
+                atlas.printOut(AtlasHelper.PARAM.AIRFLOW, "airflow" + COUNT);
+                atlas.printOut(AtlasHelper.PARAM.ELEVATION, "elevation" + COUNT);
+                atlas.printOut(AtlasHelper.PARAM.CONTINENTALNESS, "continentalness" + COUNT);
+                atlas.printOut(AtlasHelper.PARAM.TEMPERATURE, "temperature" + COUNT);
+                atlas.printOut(AtlasHelper.PARAM.HUMIDITY, "humidity" + COUNT);
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
             COUNT++;
         }
 
+    }
+
+    private void register() {
+        Registry.register(Registry.BIOME_SOURCE, Visiwa.id("atlas"), VisiwaBiomeSource.CODEC);
+        Registry.register(Registry.CHUNK_GENERATOR, Visiwa.id("atlas"), VisiwaChunkGenerator.CODEC);
     }
 }

@@ -40,25 +40,6 @@ public abstract class AtlasHelper {
         return a;
     }
 
-    public static class AtlasPixel {
-        public int y; // elevation
-        public int c; // continentalness
-        public int t; // temperature
-        public int a; // airflow
-        public int h; // humidity
-        public int e; // erosion
-        public int pv;// peaks/valleys
-        public int w; // weirdness
-        public AtlasPixel() {
-            this.a = 255;
-        }
-
-        public boolean isLand() {
-            return this.y > 127;
-        }
-    }
-
-
     public static Point[] findClosestPoint(Point point, ArrayList<Point> points) {
         return findClosestPoint(point, points, 1);
     }
@@ -92,7 +73,7 @@ public abstract class AtlasHelper {
     }
 
 
-    public static int colorMap(float h, PARAM p) {
+    public static int lerpColor(float h, PARAM p) {
         int r, g, b, rgb1, rgb2, rgb3, rgb4, rgb5, rgb6;
         switch (p) {
             case ELEVATION -> {
@@ -146,14 +127,14 @@ public abstract class AtlasHelper {
         return r << 16 | g << 8 | b;
     }
 
-    public static int clean(double x) {
-        return clean(Math.round(x));
+    public static int clean(double d) {
+        return clean(Math.round(d));
     }
-    public static int clean(float x) {
-        return clean((Math.round(x)));
+    public static int clean(float f) {
+        return clean((Math.round(f)));
     }
-    public static int clean(int x) {
-        return MathHelper.clamp(x, 0, 255);
+    public static int clean(int i) {
+        return MathHelper.clamp(i, 0, 255);
     }
 
     public enum PARAM {
