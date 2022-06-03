@@ -1,2 +1,2 @@
 accessWidener   v1  named
-accessible  field  net/minecraft/world/gen/densityfunction/DensityFunctionTypes/Beardifier    INSTANCE  Lnet/minecraft/;
+# accessible  method  net/minecraft/world/gen/chunk/ChunkNoiseSampler sampleBlockState (V)Lnet.minecraft/block/Blockstate

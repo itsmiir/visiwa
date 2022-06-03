@@ -48,9 +48,9 @@ java {
 	withSourcesJar()
 }
 
-//loom {
-//	accessWidenerPath = file("src/main/resources/visiwa.accesswidener")
-//}
+loom {
+	accessWidenerPath = file("src/main/resources/visiwa.accesswidener")
+}
 
 jar {
 	from("LICENSE") {

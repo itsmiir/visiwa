@@ -19,9 +19,11 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
 import java.io.IOException;
+import java.util.Random;
 
 public class Visiwa implements ModInitializer {
     public static final String ID = "visiwa";
+    public static final Random RANDOM = new Random();
 
 //    public static final Logger VISIWA_GENERATOR = new Logger(Logger.Level.INFO);
 

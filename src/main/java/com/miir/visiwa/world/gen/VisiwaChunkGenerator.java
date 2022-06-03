@@ -11,6 +11,7 @@ package com.miir.visiwa.world.gen;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
+import com.miir.visiwa.mixin.ChunkNoiseSamplerAccessor;
 import com.miir.visiwa.world.biome.source.VisiwaBiomeSource;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.Lifecycle;
@@ -273,9 +274,8 @@ public class VisiwaChunkGenerator extends ChunkGenerator {
                 chunkNoiseSampler.sampleNoiseY(x, f);
                 chunkNoiseSampler.sampleNoiseX(i, d);
                 chunkNoiseSampler.sampleNoise(j, e);
-                BlockState blockState = chunkNoiseSampler.sampleBlockState();
+                BlockState blockState = ((ChunkNoiseSamplerAccessor) chunkNoiseSampler).callSampleBlockState();
                 BlockState blockState3 = blockState2 = blockState == null ? this.defaultBlock : blockState;
-                // mojang why is this here
                 if (blockStates != null) {
                     int y = v * k + w;
                     blockStates[y] = blockState2;

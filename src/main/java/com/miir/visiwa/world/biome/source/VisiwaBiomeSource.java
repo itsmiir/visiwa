@@ -54,6 +54,9 @@ public class VisiwaBiomeSource extends BiomeSource {
         this.seed = seed;
         this.biomes = biomes;
     }
+    public VisiwaBiomeSource(Registry<Biome> biomes, Atlas atlas) {
+        this(biomes, atlas.getSeed(), atlas);
+    }
 
     public long getSeed() {
         return this.seed;
@@ -82,11 +85,6 @@ public class VisiwaBiomeSource extends BiomeSource {
     }
 
     @Override
-    public BiomeSource withSeed(long seed) {
-        return this;
-    }
-
-    @Override
     public RegistryEntry<Biome> getBiome(int x, int y, int z, MultiNoiseUtil.MultiNoiseSampler noise) {
         if (!atlas.isBuilt()) {
             atlas.draw();
@@ -94,7 +92,7 @@ public class VisiwaBiomeSource extends BiomeSource {
         if (!Visiwa.atlas.isLand(AtlasHelper.clean(x/16), AtlasHelper.clean(z/16))) {
             return BuiltinRegistries.BIOME.entryOf(BiomeKeys.OCEAN);
         } else {
-            return BuiltinBiomes.getDefaultBiome();
+            return BuiltinBiomes.getDefaultBiome(this.biomes);
         }
     }
 
