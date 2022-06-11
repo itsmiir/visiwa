@@ -7,7 +7,7 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.miir.visiwa.world.gen;
+package com.miir.visiwa.world.gen.chunk;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
@@ -20,6 +20,7 @@ import net.minecraft.SharedConstants;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.structure.StructureSet;
+import net.minecraft.util.Util;
 import net.minecraft.util.dynamic.RegistryOps;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -39,6 +40,7 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
+import net.minecraft.world.chunk.ProtoChunk;
 import net.minecraft.world.gen.GenerationStep;
 import net.minecraft.world.gen.HeightContext;
 import net.minecraft.world.gen.StructureAccessor;
@@ -55,45 +57,40 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Predicate;
 
-public class VisiwaChunkGenerator extends ChunkGenerator {
+public class VisiwaChunkGenerator extends NoiseChunkGenerator {
+    private VisiwaBiomeSource source;
+    private Registry<StructureSet> structures;
+    private RegistryEntry<ChunkGeneratorSettings> settings;
+    private BlockState defaultBlock = Blocks.STONE.getDefaultState();
+    private NoiseRouter noiseRouter;
+    private Registry<DoublePerlinNoiseSampler.NoiseParameters> perlinRegistry;
+    private AquiferSampler.FluidLevelSampler fluidLevelSampler;
 
-    private final long seed;
-    private final VisiwaBiomeSource source;
-    private final Registry<StructureSet> structures;
-    private final RegistryEntry<ChunkGeneratorSettings> settings;
-    private final BlockState defaultBlock = Blocks.STONE.getDefaultState();
-    private final NoiseRouter noiseRouter;
-    private final Registry<DoublePerlinNoiseSampler.NoiseParameters> perlinRegistry;
-    private final AquiferSampler.FluidLevelSampler fluidLevelSampler;
 
     public static final Codec<VisiwaChunkGenerator> CODEC = RecordCodecBuilder.create(
             in -> in.group(
-                    RegistryCodecs.dynamicRegistry(Registry.STRUCTURE_SET_KEY, Lifecycle.stable(), StructureSet.CODEC)
-                            .fieldOf("structures")
-                            .stable()
-                            .forGetter(VisiwaChunkGenerator::getStructures),
-                    VisiwaBiomeSource.CODEC
-                            .fieldOf("source")
-                            .stable()
-                            .forGetter(VisiwaChunkGenerator::getSource),
-                    Codec.LONG
-                            .fieldOf("seed")
-                            .stable()
-                            .forGetter(VisiwaChunkGenerator::getSeed),
-                    ChunkGeneratorSettings.REGISTRY_CODEC
-                            .fieldOf("settings")
-                            .stable()
-                            .forGetter(VisiwaChunkGenerator::getSettings),
-                    RegistryOps.createRegistryCodec(Registry.NOISE_KEY)
-                            .fieldOf("perlin")
-                            .stable()
-                            .forGetter(VisiwaChunkGenerator::getPerlinRegistry)
+                            RegistryCodecs.dynamicRegistry(Registry.STRUCTURE_SET_KEY, Lifecycle.stable(), StructureSet.CODEC)
+                                    .fieldOf("structures")
+                                    .stable()
+                                    .forGetter(VisiwaChunkGenerator::getStructures),
+                            ((Codec<VisiwaBiomeSource>) (Object) VisiwaBiomeSource.CODEC)
+                                    .fieldOf("source")
+                                    .stable()
+                                    .forGetter(VisiwaChunkGenerator::getSource),
+                            ChunkGeneratorSettings.REGISTRY_CODEC
+                                    .fieldOf("settings")
+                                    .stable()
+                                    .forGetter(VisiwaChunkGenerator::getSettings),
+                            RegistryOps.createRegistryCodec(Registry.NOISE_KEY)
+                                    .fieldOf("perlin")
+                                    .stable()
+                                    .forGetter(VisiwaChunkGenerator::getPerlinRegistry)
                     )
                     .apply(in, VisiwaChunkGenerator::new)
     );
 
-    public long getSeed() {
-        return this.seed;
+    public VisiwaChunkGenerator(Registry<StructureSet> structureSets, VisiwaBiomeSource biomeSource, RegistryEntry<ChunkGeneratorSettings> chunkGeneratorSettingsRegistryEntry, Registry<DoublePerlinNoiseSampler.NoiseParameters> noiseParameters) {
+        super(structureSets, noiseParameters, biomeSource, chunkGeneratorSettingsRegistryEntry);
     }
 
     public Registry<DoublePerlinNoiseSampler.NoiseParameters> getPerlinRegistry() {
@@ -111,26 +108,6 @@ public class VisiwaChunkGenerator extends ChunkGenerator {
     public Registry<StructureSet> getStructures() {
         return this.structures;
     }
-
-    public VisiwaChunkGenerator(Registry<StructureSet> registry, VisiwaBiomeSource source, long seed, RegistryEntry<ChunkGeneratorSettings> settings, Registry<DoublePerlinNoiseSampler.NoiseParameters> perlinParams) {
-        super(registry, Optional.empty(), source);
-        this.structures = registry;
-        this.settings = settings;
-        this.noiseRouter = this.settings.value().noiseRouter();
-        this.seed = seed;
-        this.source = source;
-        this.perlinRegistry = perlinParams;
-        int seaLevel = settings.value().seaLevel();
-        AquiferSampler.FluidLevel fluidLevel = new AquiferSampler.FluidLevel(-54, Blocks.LAVA.getDefaultState());
-        AquiferSampler.FluidLevel fluidLevel2 = new AquiferSampler.FluidLevel(seaLevel, settings.value().defaultFluid());
-        this.fluidLevelSampler = (x, y, z) -> {
-            if (y < Math.min(-54, seaLevel)) {
-                return fluidLevel;
-            }
-            return fluidLevel2;
-        };
-    }
-
 
 @Override
     protected Codec<? extends ChunkGenerator> getCodec() {
@@ -180,25 +157,98 @@ public class VisiwaChunkGenerator extends ChunkGenerator {
 
     @Override
     public CompletableFuture<Chunk> populateNoise(Executor executor, Blender blender, NoiseConfig noiseConfig, StructureAccessor structureAccessor, Chunk chunk) {
-        GenerationShapeConfig generationShapeConfig = this.settings.value().generationShapeConfig();
-        HeightLimitView heightLimitView = chunk.getHeightLimitView();
-        int i = Math.max(generationShapeConfig.minimumY(), heightLimitView.getBottomY());
-        int j = Math.min(generationShapeConfig.minimumY() + generationShapeConfig.height(), heightLimitView.getTopY());
-        int k = MathHelper.floorDiv(i, generationShapeConfig.verticalBlockSize());
-        int l = MathHelper.floorDiv(j - i, generationShapeConfig.verticalBlockSize());
-        if (l <= 0) {
+        GenerationShapeConfig generationShapeConfig = this.settings.value().generationShapeConfig().method_42368(chunk.getHeightLimitView());
+        int i = generationShapeConfig.minimumY();
+        int j = MathHelper.floorDiv(i, generationShapeConfig.verticalBlockSize());
+        int k = MathHelper.floorDiv(generationShapeConfig.height(), generationShapeConfig.verticalBlockSize());
+        if (k <= 0) {
             return CompletableFuture.completedFuture(chunk);
         }
-        int m = chunk.getSectionIndex(l * generationShapeConfig.verticalBlockSize() - 1 + i);
-        int n = chunk.getSectionIndex(i);
+        int l = chunk.getSectionIndex(k * generationShapeConfig.verticalBlockSize() - 1 + i);
+        int m = chunk.getSectionIndex(i);
         HashSet<ChunkSection> set = Sets.newHashSet();
-        for (int o = m; o >= n; --o) {
-            ChunkSection chunkSection = chunk.getSection(o);
+        for (int n = l; n >= m; --n) {
+            ChunkSection chunkSection = chunk.getSection(n);
             chunkSection.lock();
             set.add(chunkSection);
         }
-        System.out.println("noise population bypassed by chunk generator!");
-        return CompletableFuture.completedFuture(chunk); // todo: don't forget to fix this ;)
+        return CompletableFuture.supplyAsync(Util.debugSupplier("wgen_fill_noise", () -> this.populateNoise(blender, structureAccessor, noiseConfig, chunk, j, k)), Util.getMainWorkerExecutor()).whenCompleteAsync((c, throwable) -> {
+            for (ChunkSection chunkSection : set) {
+                chunkSection.unlock();
+            }
+        }, executor);
+    }
+
+    private ChunkNoiseSampler create(Chunk chunk, StructureAccessor structureAccessor, Blender blender, NoiseConfig noiseConfig) {
+        return ChunkNoiseSampler.create(chunk, noiseConfig, StructureWeightSampler.method_42695(structureAccessor, chunk.getPos()), this.settings.value(), this.fluidLevelSampler, blender);
+    }
+
+    private Chunk populateNoise(Blender blender, StructureAccessor structureAccessor, NoiseConfig noiseConfig, Chunk chunk2, int i, int j) {
+        ChunkNoiseSampler chunkNoiseSampler = chunk2.getOrCreateChunkNoiseSampler(chunk -> this.create(chunk, structureAccessor, blender, noiseConfig));
+        Heightmap heightmap = chunk2.getHeightmap(Heightmap.Type.OCEAN_FLOOR_WG);
+        Heightmap heightmap2 = chunk2.getHeightmap(Heightmap.Type.WORLD_SURFACE_WG);
+        ChunkPos chunkPos = chunk2.getPos();
+        int k = chunkPos.getStartX();
+        int l = chunkPos.getStartZ();
+        AquiferSampler aquiferSampler = chunkNoiseSampler.getAquiferSampler();
+        chunkNoiseSampler.sampleStartNoise();
+        BlockPos.Mutable mutable = new BlockPos.Mutable();
+        int m = ((ChunkNoiseSamplerAccessor) chunkNoiseSampler).callMethod_42361();
+        int n = ((ChunkNoiseSamplerAccessor) chunkNoiseSampler).callMethod_42362();
+        int o = 16 / m;
+        int p = 16 / m;
+        for (int q = 0; q < o; ++q) {
+            chunkNoiseSampler.sampleEndNoise(q);
+            for (int r = 0; r < p; ++r) {
+                ChunkSection chunkSection = chunk2.getSection(chunk2.countVerticalSections() - 1);
+                for (int s = j - 1; s >= 0; --s) {
+                    chunkNoiseSampler.sampleNoiseCorners(s, r);
+                    for (int t = n - 1; t >= 0; --t) {
+                        int u = (i + s) * n + t;
+                        int v = u & 0xF;
+                        int w = chunk2.getSectionIndex(u);
+                        if (chunk2.getSectionIndex(chunkSection.getYOffset()) != w) {
+                            chunkSection = chunk2.getSection(w);
+                        }
+                        double d = (double)t / (double)n;
+                        chunkNoiseSampler.sampleNoiseY(u, d);
+                        for (int x = 0; x < m; ++x) {
+                            int y = k + q * m + x;
+                            int z = y & 0xF;
+                            double e = (double)x / (double)m;
+                            chunkNoiseSampler.sampleNoiseX(y, e);
+                            for (int aa = 0; aa < m; ++aa) {
+                                int ab = l + r * m + aa;
+                                int ac = ab & 0xF;
+                                double f = (double)aa / (double)m;
+                                chunkNoiseSampler.sampleNoise(ab, f);
+                                BlockState blockState = ((ChunkNoiseSamplerAccessor)chunkNoiseSampler).callSampleBlockState();
+                                if (blockState == null) {
+                                    blockState = this.defaultBlock;
+                                }
+                                if (blockState == Blocks.AIR.getDefaultState() || SharedConstants.method_37896(chunk2.getPos())) continue;
+                                if (blockState.getLuminance() != 0 && chunk2 instanceof ProtoChunk) {
+                                    mutable.set(y, u, ab);
+                                    ((ProtoChunk)chunk2).addLightSource(mutable);
+                                }
+                                chunkSection.setBlockState(z, v, ac, blockState, false);
+                                heightmap.trackUpdate(z, u, ac, blockState);
+                                heightmap2.trackUpdate(z, u, ac, blockState);
+                                if (!aquiferSampler.needsFluidTick() || blockState.getFluidState().isEmpty()) continue;
+                                mutable.set(y, u, ab);
+                                chunk2.markBlockForPostProcessing(mutable);
+                            }
+                        }
+                    }
+                }
+            }
+            chunkNoiseSampler.swapBuffers();
+        }
+        chunkNoiseSampler.method_40537();
+        return chunk2;
+    }
+    private BlockState getBlockState(ChunkNoiseSampler chunkNoiseSampler, int x, int y, int z, BlockState state) {
+        return state;
     }
 
     @Override

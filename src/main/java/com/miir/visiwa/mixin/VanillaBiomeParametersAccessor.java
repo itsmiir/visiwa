@@ -9,18 +9,18 @@
 
 package com.miir.visiwa.mixin;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.world.gen.chunk.ChunkNoiseSampler;
+import com.mojang.datafixers.util.Pair;
+import net.minecraft.util.registry.RegistryKey;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.util.MultiNoiseUtil;
+import net.minecraft.world.biome.source.util.VanillaBiomeParameters;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-@Mixin(ChunkNoiseSampler.class)
-public interface ChunkNoiseSamplerAccessor {
-    @Invoker
-    BlockState callSampleBlockState();
-    @Invoker
-    int callMethod_42361();
+import java.util.function.Consumer;
 
+@Mixin(VanillaBiomeParameters.class)
+public interface VanillaBiomeParametersAccessor {
     @Invoker
-    int callMethod_42362();
+    void callWriteVanillaBiomeParameters(Consumer<Pair<MultiNoiseUtil.NoiseHypercube, RegistryKey<Biome>>> consumer);
 }

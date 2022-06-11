@@ -7,21 +7,17 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.miir.visiwa.mixin.client;
+package com.miir.elixir;
 
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.network.packet.s2c.play.ChunkData;
-import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import net.minecraft.util.registry.RegistryKey;
+import net.minecraft.world.gen.WorldPreset;
 
-@Mixin(ClientPlayNetworkHandler.class)
-public class ClientPlayNetworkHandlerMixin {
-    @Inject(at = @At("HEAD"), method = "onChunkData")
-    private void mixin(ChunkDataS2CPacket packet, CallbackInfo ci) {
-        ChunkData data = packet.getChunkData();
-        System.out.println(data.getSectionsDataBuf());
+import java.util.ArrayList;
+
+public class Elixir {
+//    todo: load all presets as ElixirPresets and implement mixin to automagically load tooltips into the MoreWorldOptions dialog
+    public static ArrayList<RegistryKey<WorldPreset>> PRESETS = new ArrayList<>();
+    public static void addPresets(ArrayList<RegistryKey<WorldPreset>> presets) {
+        PRESETS.addAll(presets);
     }
 }

@@ -5,10 +5,16 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "ChunkNoiseSamplerAccessor",
-    "gen.InjectPresetMixin"
+    "MultiNoiseBiomeSourceAccessor",
+    "VanillaBiomeParametersAccessor",
+    "gen.AddAtlasMixin",
+    "gen.InjectPresetMixin",
+    "gen.biome.DebugInfoMixin",
+    "gen.biome.FixEverythingInMyLifeMixin",
+    "gen.chunk.VisiwaChunkGeneratorSettingsMixin"
   ],
   "client": [
-    "client.ClientPlayNetworkHandlerMixin"
+    "client.SetAtlasSeedClientsideMixin"
   ],
   "injectors": {
     "defaultRequire": 1

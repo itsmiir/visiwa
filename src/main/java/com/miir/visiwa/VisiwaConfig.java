@@ -21,7 +21,7 @@ public class VisiwaConfig {
     public static final int SCALE_FACTOR = 4; // chunks per pixel
     public static final int HEIGHTMAP_OCTAVES = 6;
     public static final float THIRSTINESS = 0.1f;
-    public static final int SCALE = 1; // how many chunks per pixel of the map
+    public static final int SCALE = 2; // how many chunks per pixel of the map
 
     //    mountain constants, fiddling with these is not as fun as it might seem
     public static final float ROUNDNESS = .5f;

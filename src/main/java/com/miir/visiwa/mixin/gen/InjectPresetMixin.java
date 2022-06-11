@@ -10,66 +10,59 @@
 package com.miir.visiwa.mixin.gen;
 
 
-import com.miir.visiwa.Visiwa;
+import com.google.common.collect.ImmutableList;
+import com.miir.visiwa.mixin.VanillaBiomeParametersAccessor;
 import com.miir.visiwa.world.biome.source.VisiwaBiomeSource;
-import com.miir.visiwa.world.gen.Atlas;
-import com.miir.visiwa.world.gen.VisiwaChunkGenerator;
 import com.miir.visiwa.world.gen.VisiwaGen;
+import com.miir.visiwa.world.gen.chunk.VisiwaChunkGeneratorSettings;
 import net.minecraft.structure.StructureSet;
 import net.minecraft.util.math.noise.DoublePerlinNoiseSampler;
 import net.minecraft.util.registry.BuiltinRegistries;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryEntry;
+import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.source.MultiNoiseBiomeSource;
-import net.minecraft.world.biome.source.TheEndBiomeSource;
+import net.minecraft.world.biome.source.util.MultiNoiseUtil;
+import net.minecraft.world.biome.source.util.VanillaBiomeParameters;
 import net.minecraft.world.dimension.DimensionOptions;
-import net.minecraft.world.dimension.DimensionType;
-import net.minecraft.world.dimension.DimensionTypes;
 import net.minecraft.world.gen.WorldPreset;
 import net.minecraft.world.gen.WorldPresets;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.ChunkGeneratorSettings;
 import net.minecraft.world.gen.chunk.NoiseChunkGenerator;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.Map;
+@Mixin(WorldPresets.Registrar.class)
+public abstract class InjectPresetMixin {
+    @Shadow @Final private Registry<Biome> biomeRegistry;
+    @Shadow @Final private Registry<StructureSet> structureSetRegistry;
+    @Shadow @Final private Registry<DoublePerlinNoiseSampler.NoiseParameters> noiseParametersRegistry;
+    @Shadow protected abstract RegistryEntry<WorldPreset> register(RegistryKey<WorldPreset> key, DimensionOptions dimensionOptions);
+    @Shadow protected abstract DimensionOptions createOverworldOptions(ChunkGenerator chunkGenerator);
 
-@Mixin(WorldPresets.class)
-public class InjectPresetMixin {
+    @Inject(at = @At("RETURN"), method = "initAndGetDefault")
+    private void mixin(CallbackInfoReturnable<RegistryEntry<WorldPreset>> cir) {
+        ImmutableList.Builder builder = ImmutableList.builder();
+        ((VanillaBiomeParametersAccessor)(Object)new VanillaBiomeParameters()).callWriteVanillaBiomeParameters(pair -> builder.add(pair.mapSecond(biomeRegistry::getOrCreateEntry)));
 
-    @Inject(at = @At("HEAD"), method = "initAndGetDefault")
-    private static void mixin(Registry<WorldPreset> registry, CallbackInfoReturnable<RegistryEntry<WorldPreset>> cir) {
-        Registry<StructureSet> structureSetRegistry = BuiltinRegistries.STRUCTURE_SET;
-        Registry<Biome> biomeRegistry = BuiltinRegistries.BIOME;
-        Registry<DimensionType> dimensionTypeRegistry = BuiltinRegistries.DIMENSION_TYPE;
-        Registry<ChunkGeneratorSettings> chunkGeneratorSettingsRegistry = BuiltinRegistries.CHUNK_GENERATOR_SETTINGS;
-
-        RegistryEntry<DimensionType> overworldDimensionType = dimensionTypeRegistry.getOrCreateEntry(DimensionTypes.OVERWORLD);
-        Registry<DoublePerlinNoiseSampler.NoiseParameters> noiseParametersRegistry = BuiltinRegistries.NOISE_PARAMETERS;
-        Atlas atlas = new Atlas(Visiwa.RANDOM.nextLong()); // todo: change this so it's not just a random seed each time
-        DimensionOptions dimensionOptions = new DimensionOptions(
-                overworldDimensionType,
-                new VisiwaChunkGenerator(
-                        structureSetRegistry,
-                        new VisiwaBiomeSource(biomeRegistry, atlas),
-                        atlas.getSeed(),
-                        BuiltinRegistries.CHUNK_GENERATOR_SETTINGS.getOrCreateEntry(ChunkGeneratorSettings.OVERWORLD),
-                        noiseParametersRegistry));
-
-        RegistryEntry<DimensionType> theNetherDimensionType = dimensionTypeRegistry.getOrCreateEntry(DimensionTypes.THE_NETHER);
-        RegistryEntry<ChunkGeneratorSettings> netherChunkGeneratorSettings = chunkGeneratorSettingsRegistry.getOrCreateEntry(ChunkGeneratorSettings.NETHER);
-        DimensionOptions netherDimensionOptions = new DimensionOptions(theNetherDimensionType, new NoiseChunkGenerator(structureSetRegistry, noiseParametersRegistry, MultiNoiseBiomeSource.Preset.NETHER.getBiomeSource(biomeRegistry), netherChunkGeneratorSettings));
-
-        RegistryEntry<DimensionType> theEndDimensionType = dimensionTypeRegistry.getOrCreateEntry(DimensionTypes.THE_END);
-        RegistryEntry<ChunkGeneratorSettings> endChunkGeneratorSettings = chunkGeneratorSettingsRegistry.getOrCreateEntry(ChunkGeneratorSettings.END);
-        DimensionOptions endDimensionOptions = new DimensionOptions(theEndDimensionType, new NoiseChunkGenerator(structureSetRegistry, noiseParametersRegistry, new TheEndBiomeSource(biomeRegistry), endChunkGeneratorSettings));
-
-        WorldPreset preset = new WorldPreset(Map.of(DimensionOptions.OVERWORLD, dimensionOptions, DimensionOptions.NETHER, netherDimensionOptions, DimensionOptions.END, endDimensionOptions));
-
-        BuiltinRegistries.add(registry, VisiwaGen.ATLAS, preset);
-//        todo: inject @ "return" and get locals-- use the MultiNoiseBiomeSource and create a new RegistryEntry<VisiwaBiomeSource>
+        this.register(VisiwaGen.ATLAS, this.createOverworldOptions(new NoiseChunkGenerator(
+                structureSetRegistry,
+                noiseParametersRegistry,
+                new VisiwaBiomeSource(new MultiNoiseUtil.Entries(builder.build())),
+                BuiltinRegistries.CHUNK_GENERATOR_SETTINGS.getOrCreateEntry(VisiwaChunkGeneratorSettings.ATLAS))));
+//        DimensionOptions dimensionOptions = new DimensionOptions(
+//                overworldDimensionType,
+//                new VisiwaChunkGenerator(
+//                        structureSetRegistry,
+//                        new VisiwaBiomeSource(biomeRegistry, atlas),
+//                        BuiltinRegistries.CHUNK_GENERATOR_SETTINGS.getOrCreateEntry(ChunkGeneratorSettings.OVERWORLD),
+//                        noiseParametersRegistry));
+//        WorldPreset preset = new WorldPreset(Map.of(DimensionOptions.OVERWORLD, dimensionOptions, DimensionOptions.NETHER, netherDimensionOptions, DimensionOptions.END, endDimensionOptions));
+//        BuiltinRegistries.add(worldPresetRegistry, VisiwaGen.ATLAS, preset);
     }
 }

@@ -9,24 +9,29 @@
 
 package com.miir.visiwa;
 
-import com.miir.visiwa.world.biome.source.VisiwaBiomeSource;
+import com.miir.elixir.Elixir;
 import com.miir.visiwa.world.gen.Atlas;
 import com.miir.visiwa.world.gen.AtlasHelper;
-import com.miir.visiwa.world.gen.VisiwaChunkGenerator;
+import com.miir.visiwa.world.gen.chunk.VisiwaChunkGenerator;
 import com.miir.visiwa.world.gen.VisiwaGen;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryKey;
+import net.minecraft.world.gen.WorldPreset;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Random;
+import java.util.ArrayList;
 
 public class Visiwa implements ModInitializer {
     public static final String ID = "visiwa";
-    public static final Random RANDOM = new Random();
+    public static final Logger LOGGER = LoggerFactory.getLogger(ID);
+    public static boolean isAtlas = true;
+    public static long SEED = 0L;
 
-//    public static final Logger VISIWA_GENERATOR = new Logger(Logger.Level.INFO);
-
+    public static ArrayList<RegistryKey<WorldPreset>> NEW_WORLD_TYPES = new ArrayList<>();
     public static int COUNT = 0;
     //    public static final Random random = new Random();
 
@@ -34,29 +39,21 @@ public class Visiwa implements ModInitializer {
     public static Identifier id(String path) {
         return new Identifier(ID, path);
     }
-    public static final Atlas atlas = new Atlas(0, 2, false, VisiwaConfig.WIDTH, VisiwaConfig.HEIGHT);
+    public static Atlas ATLAS = new Atlas(0, 2, false, VisiwaConfig.WIDTH, VisiwaConfig.HEIGHT);
     @Override
     public void onInitialize() {
+        addPreset();
         register();
-        for (int i = 0; i < 1; i++) {
-            atlas.draw();
-            try {
-                atlas.printOut(AtlasHelper.PARAM.AIRFLOW, "airflow" + COUNT);
-                atlas.printOut(AtlasHelper.PARAM.ELEVATION, "elevation" + COUNT);
-                atlas.printOut(AtlasHelper.PARAM.CONTINENTALNESS, "continentalness" + COUNT);
-                atlas.printOut(AtlasHelper.PARAM.TEMPERATURE, "temperature" + COUNT);
-                atlas.printOut(AtlasHelper.PARAM.HUMIDITY, "humidity" + COUNT);
+        Elixir.addPresets(NEW_WORLD_TYPES);
+    }
 
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            COUNT++;
-        }
-
+    private void addPreset() {
+        NEW_WORLD_TYPES.add(VisiwaGen.ATLAS);
     }
 
     private void register() {
-        Registry.register(Registry.BIOME_SOURCE, Visiwa.id("atlas"), VisiwaBiomeSource.CODEC);
+//        Registry.register(Registry.BIOME_SOURCE, Visiwa.id("atlas"), VisiwaBiomeSource.CODEC);
         Registry.register(Registry.CHUNK_GENERATOR, Visiwa.id("atlas"), VisiwaChunkGenerator.CODEC);
     }
+
 }

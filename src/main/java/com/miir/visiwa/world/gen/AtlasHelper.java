@@ -15,6 +15,7 @@ import java.awt.*;
 import java.util.ArrayList;
 
 public abstract class AtlasHelper {
+
     public static double getAngle(Point pt0, Point pt1) {
         if (pt0.equals(pt1)) {
             return 0;
@@ -71,7 +72,6 @@ public abstract class AtlasHelper {
         closests[n-1] = minPoint;
         return closests;
     }
-
 
     public static int lerpColor(float h, PARAM p) {
         int r, g, b, rgb1, rgb2, rgb3, rgb4, rgb5, rgb6;

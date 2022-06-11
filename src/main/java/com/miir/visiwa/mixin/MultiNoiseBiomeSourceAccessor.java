@@ -9,18 +9,14 @@
 
 package com.miir.visiwa.mixin;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.world.gen.chunk.ChunkNoiseSampler;
+import net.minecraft.world.biome.source.MultiNoiseBiomeSource;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-@Mixin(ChunkNoiseSampler.class)
-public interface ChunkNoiseSamplerAccessor {
-    @Invoker
-    BlockState callSampleBlockState();
-    @Invoker
-    int callMethod_42361();
+import java.util.Optional;
 
+@Mixin(MultiNoiseBiomeSource.class)
+public interface MultiNoiseBiomeSourceAccessor {
     @Invoker
-    int callMethod_42362();
+    Optional<MultiNoiseBiomeSource.Instance> callGetInstance();
 }
