@@ -10,28 +10,42 @@
 package com.miir.visiwa.mixin.gen.biome;
 
 import com.miir.visiwa.Visiwa;
+import com.miir.visiwa.world.biome.VisiwaBiomePainter;
 import com.miir.visiwa.world.gen.atlas.AtlasHelper;
-import com.miir.visiwa.world.gen.atlas.AtlasSubSampler;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.util.math.BlockPos;
+import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
+import net.minecraft.util.registry.RegistryEntry;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.biome.source.BiomeCoords;
+import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.biome.source.MultiNoiseBiomeSource;
 import net.minecraft.world.biome.source.util.MultiNoiseUtil;
-import net.minecraft.world.biome.source.util.VanillaBiomeParameters;
-import net.minecraft.world.gen.densityfunction.DensityFunctions;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
 
-import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 @Mixin(MultiNoiseBiomeSource.class)
-public class DebugInfoMixin {
+public abstract class AtlasBiomeMixin extends BiomeSource {
+
+    protected AtlasBiomeMixin(Stream<RegistryEntry<Biome>> biomeStream) {
+        super(biomeStream);
+    }
+
+    @Shadow public abstract RegistryEntry<Biome> getBiomeAtPoint(MultiNoiseUtil.NoiseValuePoint point);
+
     /**
      * @author
      */
     @Overwrite
-    public void addDebugInfo(List<String> info, BlockPos pos, MultiNoiseUtil.MultiNoiseSampler noiseSampler) {
-        info.add("elevation: " + (AtlasSubSampler.getHeight(pos.getX(), pos.getZ()) + 1));
+    public RegistryEntry<Biome> getBiome(int x, int y, int z, MultiNoiseUtil.MultiNoiseSampler sampler) {
+        int i = BiomeCoords.toBlock(x);
+        int j = BiomeCoords.toBlock(y);
+        int k = BiomeCoords.toBlock(z);
+        return VisiwaBiomePainter.getBiome(i, j, k).orElseGet(() -> this.getBiomeAtPoint(sampler.sample(x, y, z)));
+//        return this.getBiomeAtPoint(sampler.sample(x, y, z));
     }
 }

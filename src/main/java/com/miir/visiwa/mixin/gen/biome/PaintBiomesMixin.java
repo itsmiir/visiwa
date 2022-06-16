@@ -10,8 +10,7 @@
 package com.miir.visiwa.mixin.gen.biome;
 
 import com.miir.visiwa.Visiwa;
-import com.miir.visiwa.VisiwaConfig;
-import com.miir.visiwa.world.gen.Atlas;
+import com.miir.visiwa.world.gen.atlas.AtlasHelper;
 import net.minecraft.world.biome.source.BiomeCoords;
 import net.minecraft.world.biome.source.util.MultiNoiseUtil;
 import net.minecraft.world.gen.densityfunction.DensityFunction;
@@ -21,8 +20,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(MultiNoiseUtil.MultiNoiseSampler.class)
-//this will work trust me
-public class FixEverythingInMyLifeMixin {
+public class PaintBiomesMixin {
 
     @Shadow @Final private DensityFunction temperature;
 
@@ -47,23 +45,17 @@ public class FixEverythingInMyLifeMixin {
         int k = BiomeCoords.toBlock(z);
         DensityFunction.UnblendedNoisePos unblendedNoisePos = new DensityFunction.UnblendedNoisePos(i, j, k);
         if (Visiwa.isAtlas) {
-            i/=(VisiwaConfig.SCALE);
+            int[] ints = AtlasHelper.coordToPixel(i, j, k);
 //            y coordinate should not be scaled
-            k/=(VisiwaConfig.SCALE);
-            /*
-            todo: elevation is too high (oceans are not common enough) transform elevation w/ sharper function? e.g. 7e^(2x-4) on (-1, 1)
-            todo: get hands on biome lookup table
-            todo: implement slight noise variations so biomes aren't too terribly huge (and also so biomes repeat a little more)
-            todo: chunk generator still is building heightmap based on vanilla noise params [citation needed] (ocean biomes can generate atop mountains)
-            todo: change overwrite to more friendly mixin type (conditional redirect?)
-             */
+            int xPx = ints[0];
+            int zPx = ints[2];
             return MultiNoiseUtil.createNoiseValuePoint(
-                    Visiwa.ATLAS.getFloatNoiseVal(Visiwa.ATLAS.getT(i, k)),
-                    Visiwa.ATLAS.getFloatNoiseVal(Visiwa.ATLAS.getH(i, k)),
-                    Visiwa.ATLAS.getFloatNoiseVal(Visiwa.ATLAS.getY(i, k)),
-                    -Visiwa.ATLAS.getFloatNoiseVal(Visiwa.ATLAS.getY(i, k)),
-                    (float) this.depth.sample(new DensityFunction.UnblendedNoisePos(i, j, k)),
-                    Visiwa.ATLAS.getFloatNoiseVal(Visiwa.ATLAS.getW(i, k))
+                    Visiwa.ATLAS.getFloatNoiseVal((int) Math.round(Visiwa.ATLAS.lerpTemp(xPx, zPx, i, k))),
+                    Visiwa.ATLAS.getFloatNoiseVal((int) Math.round(Visiwa.ATLAS.lerpHumidity(xPx, zPx, i, k))),
+                    Visiwa.ATLAS.getFloatNoiseVal((int) Math.round(Visiwa.ATLAS.lerpElevation(xPx, zPx, i, k))),
+                    -Visiwa.ATLAS.getFloatNoiseVal((int) Math.round(Visiwa.ATLAS.getY(xPx, zPx))),
+                    (float) this.depth.sample(unblendedNoisePos),
+                    Visiwa.ATLAS.getFloatNoiseVal((int) Math.round(Visiwa.ATLAS.lerpWeirdness(xPx, zPx, i, k)))
                     );
         }
         return MultiNoiseUtil.createNoiseValuePoint((float)this.temperature.sample(unblendedNoisePos), (float)this.humidity.sample(unblendedNoisePos), (float)this.continentalness.sample(unblendedNoisePos), (float)this.erosion.sample(unblendedNoisePos), (float)this.depth.sample(unblendedNoisePos), (float)this.weirdness.sample(unblendedNoisePos));

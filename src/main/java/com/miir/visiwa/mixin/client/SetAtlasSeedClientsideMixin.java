@@ -10,13 +10,15 @@
 package com.miir.visiwa.mixin.client;
 
 import com.miir.visiwa.Visiwa;
-import com.miir.visiwa.world.gen.Atlas;
-import com.miir.visiwa.world.gen.AtlasHelper;
+import com.miir.visiwa.world.gen.atlas.Atlas;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.resource.ResourcePackManager;
 import net.minecraft.server.SaveLoader;
+import net.minecraft.util.registry.RegistryEntry;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.gen.GeneratorOptions;
 import net.minecraft.world.level.storage.LevelStorage;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,6 +26,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Environment(EnvType.CLIENT)
 @Mixin(MinecraftClient.class)
@@ -35,11 +39,14 @@ public class SetAtlasSeedClientsideMixin {
                     target = "Lnet/minecraft/client/MinecraftClient;disconnect()V",
                     shift = At.Shift.AFTER))
     private void mixin(String levelName, LevelStorage.Session session, ResourcePackManager dataPackManager, SaveLoader saveLoader, CallbackInfo ci) throws IOException {
-        long seed = saveLoader.saveProperties().getGeneratorOptions().getSeed();
+        GeneratorOptions options = saveLoader.saveProperties().getGeneratorOptions();
+        long seed = options.getSeed();
         Visiwa.LOGGER.info("set seed");
         Visiwa.SEED = seed;
         Visiwa.ATLAS = new Atlas(seed);
         Visiwa.ATLAS.draw();
         Visiwa.ATLAS.printAll("output");
+        Visiwa.BIOMES = options.getChunkGenerator().getBiomeSource().getBiomes().stream().toList();
+        Visiwa.SEA_LEVEL = options.getChunkGenerator().getSeaLevel();
     }
 }

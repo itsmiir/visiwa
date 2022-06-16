@@ -9,8 +9,10 @@
     "VanillaBiomeParametersAccessor",
     "gen.AddAtlasMixin",
     "gen.InjectPresetMixin",
+    "gen.biome.AtlasBiomeMixin",
     "gen.biome.DebugInfoMixin",
-    "gen.biome.FixEverythingInMyLifeMixin",
+    "gen.biome.PaintBiomesMixin",
+    "gen.chunk.DebugNoiseChunkGeneratorOverride",
     "gen.chunk.VisiwaChunkGeneratorSettingsMixin"
   ],
   "client": [
