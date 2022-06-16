@@ -9,23 +9,17 @@
 
 package com.miir.visiwa.mixin.gen.biome;
 
-import com.miir.visiwa.Visiwa;
 import com.miir.visiwa.world.biome.VisiwaBiomePainter;
-import com.miir.visiwa.world.gen.atlas.AtlasHelper;
-import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
 import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.biome.source.BiomeCoords;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.biome.source.MultiNoiseBiomeSource;
 import net.minecraft.world.biome.source.util.MultiNoiseUtil;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 @Mixin(MultiNoiseBiomeSource.class)

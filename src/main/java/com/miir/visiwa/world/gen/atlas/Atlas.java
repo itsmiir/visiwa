@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 public class Atlas implements Serializable {
     public static final Codec<Atlas> CODEC;
     public static final int DEPTH = 8; // how many values each pixel of the atlas has
+    private static final int PEAKS = 5;
     private OptionalLong seed;
     public boolean regional; // creates a realistic (life-sized) map, but with a limited climate range
     public final int scaleFactor;
@@ -205,7 +206,27 @@ public class Atlas implements Serializable {
         this.aerate();
         this.testHumidity();
         this.seeWeirdness();
+        this.postProcess();
         return this;
+    }
+
+    private void postProcess() {
+        for (int n = 0; n < VisiwaConfig.BLURRINESS; n++) {
+            for (int y = this.height - 2; y > 0; y--) {
+                for (int x = 1; x < this.width - 1; x++) {
+                    this.setBiomeNoise(AtlasHelper.clean(
+                            (this.getBiomeNoise(x, y) +
+                                    this.getBiomeNoise(x - 1, y - 1) +
+                                    this.getBiomeNoise(x, y - 1) +
+                                    this.getBiomeNoise(x + 1, y - 1) +
+                                    this.getBiomeNoise(x - 1, y) +
+                                    this.getBiomeNoise(x + 1, y) +
+                                    this.getBiomeNoise(x - 1, y + 1) +
+                                    this.getBiomeNoise(x, y + 1) +
+                                    this.getBiomeNoise(x + 1, y + 1)) / 9.0), x, y);
+                }
+            }
+        }
     }
 
     private void simplexTerrain() {
@@ -278,8 +299,13 @@ public class Atlas implements Serializable {
                     / ((VisiwaConfig.BUBBLINESS + VisiwaConfig.ROUNDNESS + VisiwaConfig.SHARPNESS));
 //            h /= 255;
 //            h =
+            if (d1 < 5) {
+                this.setBiomeNoise(Atlas.PEAKS, point);
+            } else {
+                this.setBiomeNoise(1, point);
+            }
             int currY = this.getY(point);
-            this.setY(AtlasHelper.clean((h+currY*3)/4), point);
+            this.setY(AtlasHelper.clean((h+currY*2)/3), point);
         }
     }
     private void findCoastlines() {
@@ -376,22 +402,10 @@ public class Atlas implements Serializable {
         SimplexNoiseSampler simplex = this.simplex.get();
         for (int x = 0; x < this.width; x++) {
             for (int z = 0; z < this.height; z++) {
-                this.setW(AtlasHelper.clean((simplex.sample(x+this.width, +this.width) / 2 + 0.5) * 255), x, z);
+                this.setW(AtlasHelper.clean((simplex.sample((x+this.width)/VisiwaConfig.BIOME_SIZE, (z+this.height)/VisiwaConfig.BIOME_SIZE) / 2 + 0.5) * 255), x, z);
             }
         }
     }
-
-
-    private ArrayList<Point> getPoints() {
-        ArrayList<Point> points = new ArrayList<>();
-        for (int x = 0; x < this.width; x++) {
-            for (int z = 0; z < this.height; z++) {
-                points.add(new Point(x, z));
-            }
-        }
-        return points;
-    }
-
     public void printAll(String path) throws IOException {
         this.printOut(AtlasHelper.PARAM.ELEVATION, path + "_elevation");
         this.printOut(AtlasHelper.PARAM.CONTINENTALNESS, path + "_continentalness");
@@ -401,7 +415,6 @@ public class Atlas implements Serializable {
         this.printOut(AtlasHelper.PARAM.EROSION, path + "_erosion");
 
     }
-
     public void printOut(AtlasHelper.PARAM p, String path) throws IOException {
         if (this.built) {
             BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -428,6 +441,15 @@ public class Atlas implements Serializable {
         }
     }
 
+    private ArrayList<Point> getPoints() {
+        ArrayList<Point> points = new ArrayList<>();
+        for (int x = 0; x < this.width; x++) {
+            for (int z = 0; z < this.height; z++) {
+                points.add(new Point(x, z));
+            }
+        }
+        return points;
+    }
     private Point randomPoint() {
         if (!this.hasSeed()) {
             throw new IllegalStateException("tried to perform an operation on a blank atlas!");
@@ -437,7 +459,6 @@ public class Atlas implements Serializable {
         int y = (int) Math.round(random.nextGaussian() * (this.height / VisiwaConfig.SIGMA) + (this.height / 2.0f));
         return new Point(x, y);
     }
-
     private ArrayList<Point> randomPoints(ArrayList<Point> points, int k) {
         if (!this.hasSeed()) {
             throw new IllegalStateException("tried to perform an operation on a blank atlas!");
@@ -455,7 +476,6 @@ public class Atlas implements Serializable {
         }
         return randoms;
     }
-
     public ArrayList<Point> pointsWithinRange(Point point, int radius) {
         ArrayList<Point> points = new ArrayList<>();
         for (int y = 0; y <= radius * 2 + 1; y++) {
@@ -484,65 +504,49 @@ public class Atlas implements Serializable {
     public int getY(Point point) {
         return this.getMap()[MathHelper.clamp(point.y, 0, this.height - 1)][MathHelper.clamp(point.x, 0, this.width - 1)][0];
     }
-
     public int getY(int x, int y) {
         return this.getMap()[MathHelper.clamp(y, 0, this.height - 1)][MathHelper.clamp(x, 0, this.width - 1)][0];
     }
-
     public int getC(Point point) {
         return this.getMap()[MathHelper.clamp(point.y, 0, this.height - 1)][MathHelper.clamp(point.x, 0, this.width - 1)][1];
     }
-
     public int getC(int x, int y) {
         return this.getMap()[MathHelper.clamp(y, 0, this.height - 1)][MathHelper.clamp(x, 0, this.width - 1)][1];
     }
-
     public int getT(Point point) {
         return this.getMap()[MathHelper.clamp(point.y, 0, this.height - 1)][MathHelper.clamp(point.x, 0, this.width - 1)][2];
     }
-
     public int getT(int x, int y) {
         return this.getMap()[MathHelper.clamp(y, 0, this.height - 1)][MathHelper.clamp(x, 0, this.width - 1)][2];
     }
-
     public int getA(Point point) {
         return this.getMap()[MathHelper.clamp(point.y, 0, this.height - 1)][MathHelper.clamp(point.x, 0, this.width - 1)][3];
     }
-
     public int getA(int x, int y) {
         return this.getMap()[MathHelper.clamp(y, 0, this.height - 1)][MathHelper.clamp(x, 0, this.width - 1)][3];
     }
-
     public int getH(Point point) {
-//        return 255-this.getC(point);
         return this.getMap()[MathHelper.clamp(point.y, 0, this.height - 1)][MathHelper.clamp(point.x, 0, this.width - 1)][4];
     }
-
     public int getH(int x, int y) {
 //        return 255-this.getC(x, y);
         return this.getMap()[MathHelper.clamp(y, 0, this.height - 1)][MathHelper.clamp(x, 0, this.width - 1)][4];
     }
-
     public int getE(Point point) {
         return this.getMap()[MathHelper.clamp(point.y, 0, this.height - 1)][MathHelper.clamp(point.x, 0, this.width - 1)][5];
     }
-
     public int getE(int x, int y) {
         return this.getMap()[MathHelper.clamp(y, 0, this.height - 1)][MathHelper.clamp(x, 0, this.width - 1)][5];
     }
-
     public int getBiomeNoise(Point point) {
         return this.getMap()[MathHelper.clamp(point.y, 0, this.height - 1)][MathHelper.clamp(point.x, 0, this.width - 1)][6];
     }
-
     public int getBiomeNoise(int x, int y) {
         return this.getMap()[MathHelper.clamp(y, 0, this.height - 1)][MathHelper.clamp(x, 0, this.width - 1)][6];
     }
-
     public int getW(Point point) {
         return this.getMap()[MathHelper.clamp(point.y, 0, this.height - 1)][MathHelper.clamp(point.x, 0, this.width - 1)][7];
     }
-
     public int getW(int x, int y) {
         return this.getMap()[MathHelper.clamp(y, 0, this.height - 1)][MathHelper.clamp(x, 0, this.width - 1)][7];
     }

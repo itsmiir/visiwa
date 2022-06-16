@@ -13,12 +13,15 @@ public class VisiwaConfig {
     public static final int HEIGHT = 256; //  128: 7s; 256: 48s; 512: 381s; 1024x512: 2151s : seems to scale at 2c
     public static final int WIDTH = HEIGHT; // stfu intellij
     public static final int MAX_WORLDGEN_HEIGHT = 256;
-    public static final int MOUNTAIN_PEAK_HEIGHT = 220;
-    public static final int MOUNTAIN_SLOPE_HEIGHT = 200;
+    public static final int MOUNTAIN_PEAK_HEIGHT = 190;
+    public static final int MOUNTAIN_SLOPE_HEIGHT = 160;
     public static final double HOT_BIOME_TEMP = 200;
     public static final int TEMPERATE_BIOME_TEMP = 100;
     public static final int COLD_BIOME_TEMP = 50;
     public static final int SNOWY_BIOME_TEMP = 0;
+    public static final int SEA_LEVEL = 63;
+    public static final double BIOME_SIZE = 128;
+    public static final int BLURRINESS = 2; // how many times to smooth out noise
     public static float SIGMA = 3f; // spread-outedness of the terrain
     public static final int SCALE_FACTOR = 4; // blocks per pixel (this should be pretty high)
     public static final int HEIGHTMAP_OCTAVES = 6;

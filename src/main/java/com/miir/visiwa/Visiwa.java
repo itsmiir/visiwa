@@ -35,6 +35,9 @@ public class Visiwa implements ModInitializer {
     /*
     todo:
         create more height variation in terrain (implement in AtlasSubSampler::getSurfaceNoise or Atlas::buildMountains)
+        perhaps implement more noise layers for local height? (elevation modulates biome noise modulates a few more layers modulates the heightmap)
+        fix the giant patch of stone issue
+        add custom biome tags
         change overwrites to more compat-friendly mixin type (conditional redirect?)
         regional noise variations (mountainous regions are more spiky, plains and beaches are more flat)
         better algorithms for temp, humidity, weirdness
@@ -54,7 +57,7 @@ public class Visiwa implements ModInitializer {
         new biomes
             -bush, lake, canyon, deep sea trench, ice sheet, mushroom cave, lava tubes, mossy forest, crater oasis, oasis,
             geothermal pool, mesa, shallow (1 block deep) lake, river valley, tundra, painted mountains, bayou, redwood forest,
-            tide pools, alpine slopes
+            tide pools, alpine slopes, lush desert, pink forest
             -exotic biomes?
                 -amethyst rift, jungle pillars, oceanic sinkhole, infernal leak, haunted woods, underground jungle, frozen cave,
                 lush rift, ancient forest, glowing cavern, glassed desert
@@ -65,6 +68,7 @@ public class Visiwa implements ModInitializer {
 
     public static final String ID = "visiwa";
     public static final Logger LOGGER = LoggerFactory.getLogger(ID);
+    public static final boolean DEBUG_BIOME = false;
 
 
     public static boolean isAtlas = true;

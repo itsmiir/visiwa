@@ -23,15 +23,18 @@ import java.util.Optional;
 
 public class VisiwaBiomePainter {
     public static Optional<RegistryEntry<Biome>> getBiome(int x, int y, int z) {
+        if (Visiwa.DEBUG_BIOME) {
+            return Optional.of(Visiwa.BIOMES.get(1));
+        }
+        ArrayList<RegistryEntry<Biome>> biomes = new ArrayList<>(Visiwa.BIOMES);
         int[] pixel = AtlasHelper.coordToPixel(x, y, z);
         double weirdness = Visiwa.ATLAS.lerpWeirdness(pixel[0], pixel[2], x, z);
         double height = AtlasSubSampler.getHeight(x, z);
         double temperature = Visiwa.ATLAS.lerpTemp(pixel[0], pixel[2], x, z);
-        ArrayList<RegistryEntry<Biome>> biomes = new ArrayList<>(Visiwa.BIOMES);
         if (height >= VisiwaConfig.MOUNTAIN_PEAK_HEIGHT + Visiwa.ATLAS.getSimplex().sample(x/255.0, y/255.0, z/255.0)*7) {
-            biomes.removeIf(biome -> !biome.isIn(BiomeTags.IS_MOUNTAIN));
+            biomes.removeIf(biome -> !biome.getKey().get().getValue().getPath().contains("peaks"));
         } else if (height >= VisiwaConfig.MOUNTAIN_SLOPE_HEIGHT + Visiwa.ATLAS.getSimplex().sample(x/255.0, y/255.0, z/255.0)*7) {
-            biomes.removeIf(biome -> !biome.isIn(BiomeTags.IS_HILL));
+            biomes.removeIf(biome -> !biome.isIn(BiomeTags.IS_MOUNTAIN));
         } else if (height <= 30) {
             biomes.removeIf(biome -> !biome.isIn(BiomeTags.IS_DEEP_OCEAN));
         } else if (height <= 55) {
@@ -41,29 +44,30 @@ public class VisiwaBiomePainter {
         }
         else {
 //            none of the above biomes should spawn outside those spots
-            biomes.removeIf(biome -> (biome.isIn(BiomeTags.IS_OCEAN) || biome.isIn(BiomeTags.IS_BEACH) || biome.isIn(BiomeTags.IS_HILL) || biome.isIn(BiomeTags.IS_MOUNTAIN)));
+            biomes.removeIf(biome -> (biome.isIn(BiomeTags.IS_OCEAN) || biome.isIn(BiomeTags.IS_BEACH) || biome.isIn(BiomeTags.IS_MOUNTAIN)));
             if (temperature >= VisiwaConfig.HOT_BIOME_TEMP) {
                 biomes.removeIf(biome -> !(biome.value().getTemperature() >= 1));
             } else if (temperature >= VisiwaConfig.TEMPERATE_BIOME_TEMP) {
-                biomes.removeIf(biome -> !(biome.value().getTemperature() <= 1 || biome.value().getTemperature() >= 0.5 || !biome.isIn(BiomeTags.IS_OCEAN)));
+                biomes.removeIf(biome -> !(biome.value().getTemperature() <= 1 && biome.value().getTemperature() >= 0.5 && !biome.isIn(BiomeTags.IS_OCEAN)));
             } else if (temperature >= VisiwaConfig.COLD_BIOME_TEMP) {
-                biomes.removeIf(biome -> !(biome.value().getTemperature() < 0.5 || biome.value().getTemperature() >= 0.1));
+                biomes.removeIf(biome -> !(biome.value().getTemperature() < 0.5 && biome.value().getTemperature() >= 0.1));
             } else {
                 biomes.removeIf(biome -> !(biome.value().getTemperature() <= 0.1));
             }
         }
         int n = biomes.size();
+//        Visiwa.LOGGER.info("biome list size:" + n);
         if (n == 0) {
             return Optional.empty();
         } else {
             weirdness /= 255;
             weirdness *= n;
-            weirdness = Math.round(weirdness);
+            weirdness = Math.floor(weirdness);
             try {
+//                Visiwa.LOGGER.info("weirdness value: " + (int) weirdness);
                 return Optional.of(((List<RegistryEntry<Biome>>) biomes).get((int) weirdness));
             } catch (IndexOutOfBoundsException e) {
-                Visiwa.LOGGER.error("could not find a matching biome at " + x + ", " + y + ", " + z);
-                return Optional.empty();
+                return Optional.of(biomes.get(0));
             }
         }
     }
