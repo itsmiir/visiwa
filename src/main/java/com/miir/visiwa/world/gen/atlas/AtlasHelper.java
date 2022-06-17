@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 miir
+ * Copyright (c) 2022-2022 miir
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
@@ -7,14 +7,17 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.miir.visiwa.world.gen;
+package com.miir.visiwa.world.gen.atlas;
 
+import com.miir.visiwa.Visiwa;
+import com.miir.visiwa.VisiwaConfig;
 import net.minecraft.util.math.MathHelper;
 
 import java.awt.*;
 import java.util.ArrayList;
 
 public abstract class AtlasHelper {
+
     public static double getAngle(Point pt0, Point pt1) {
         if (pt0.equals(pt1)) {
             return 0;
@@ -72,8 +75,7 @@ public abstract class AtlasHelper {
         return closests;
     }
 
-
-    public static int lerpColor(float h, PARAM p) {
+    public static int lerpColor(float h, PARAM p, boolean bw) {
         int r, g, b, rgb1, rgb2, rgb3, rgb4, rgb5, rgb6;
         switch (p) {
             case ELEVATION -> {
@@ -100,6 +102,14 @@ public abstract class AtlasHelper {
                 rgb5 = 0xC5AB4D;
                 rgb6 = 0x814B50;
             }
+        }
+        if (bw) {
+            int v = (int) (((h / 2)+0.5)*255);
+            if (v <= 63) {
+                return 0x00009F;
+            }
+//            v += 64;
+            return v << 16 | v << 8 | v;
         }
         if (h < -0.5f) {
             h += 0.5f;
@@ -137,6 +147,48 @@ public abstract class AtlasHelper {
         return MathHelper.clamp(i, 0, 255);
     }
 
+    public static int[] coordToPixel(int absoluteX, int absoluteY, int absoluteZ) {
+        int[] pos = new int[6];
+        pos[0] = Math.floorDiv(absoluteX, VisiwaConfig.SCALE);
+        pos[1] = absoluteY;
+        pos[2] = Math.floorDiv(absoluteZ, VisiwaConfig.SCALE);
+//        how much to lerp the noise values by
+        pos[3] = absoluteX % VisiwaConfig.SCALE;
+        pos[4] = 0;
+        pos[5] = absoluteZ % VisiwaConfig.SCALE;
+        return pos;
+    }
+
+    public static double yToHeight(int y, int seaLevel, int erosion) {
+        return y;
+//        double f = Math.pow(y - 128, 7) / 40000000000000000L;
+//        f += (seaLevel - 64);
+//        f += Math.pow(y + 250, 4) / 10000000000L;
+//        f += .5 * y;
+//        f += .000000000001*Math.pow(y ,6);
+//        f += Math.exp(.02*(y-100));
+//        f += Math.abs(erosion-128)/128F * (y - 128);
+//        return MathHelper.clamp(f, 0, VisiwaConfig.MAX_WORLDGEN_HEIGHT);
+    }
+
+    public static float getPVNoise(int a) {
+//        w = (pv/255 * 2/3) - 2/3
+//        map a on the domain [-0.67, 0]
+        float f = a / 255f;
+        f *= .666666666666667f;
+        f -= .666666666666667f;
+//        and then map that to a subset of [0,255]
+        return (f / 2f +.5f) *255;
+    }
+
+    public static double lerpTransform(double input) {
+        if (input < 0 || input > 1) {
+            Visiwa.LOGGER.error("tried to perform a smooth lerp on the value "+input+", which is not in [0, 1]!");
+            return input;
+        }
+        return -.5*Math.cos(Math.PI*input)-1; // it's that little smoothing function they used for neural networks
+    }
+
     public enum PARAM {
         ELEVATION,
         CONTINENTALNESS,
@@ -144,7 +196,7 @@ public abstract class AtlasHelper {
         AIRFLOW,
         HUMIDITY,
         EROSION,
-        PEAKS,
+        BIOME_NOISE,
         WEIRDNESS
     }
 }

@@ -12,22 +12,30 @@ package com.miir.visiwa;
 public class VisiwaConfig {
     public static final int HEIGHT = 256; //  128: 7s; 256: 48s; 512: 381s; 1024x512: 2151s : seems to scale at 2c
     public static final int WIDTH = HEIGHT; // stfu intellij
+    public static final int MAX_WORLDGEN_HEIGHT = 256;
+    public static final int MOUNTAIN_PEAK_HEIGHT = 190;
+    public static final int MOUNTAIN_SLOPE_HEIGHT = 160;
+    public static final double HOT_BIOME_TEMP = 200;
+    public static final int TEMPERATE_BIOME_TEMP = 100;
+    public static final int COLD_BIOME_TEMP = 50;
+    public static final int SNOWY_BIOME_TEMP = 0;
+    public static final int SEA_LEVEL = 63;
+    public static final double BIOME_SIZE = 128;
+    public static final int BLURRINESS = 2; // how many times to smooth out noise
     public static float SIGMA = 3f; // spread-outedness of the terrain
-    public static final int DENSITY = 6; // higher density == more water nodes
-    public static final float WETNESS = 0.004f; // self-explanatory
-    public static float OCEAN_SIZE = 0.55f; // higher == more ocean (don't set this too low)
-    public static final int K = 1; // probably get rid of this
-    public static final boolean PIRATE_ADVENTURE = false; // arr
-    public static final int SCALE_FACTOR = 4; // chunks per pixel
+    public static final int SCALE_FACTOR = 4; // blocks per pixel (this should be pretty high)
     public static final int HEIGHTMAP_OCTAVES = 6;
+    public static final int SUBPIXEL_OCTAVES = 4;
     public static final float THIRSTINESS = 0.1f;
-    public static final int SCALE = 1; // how many chunks per pixel of the map
+    public static final int SCALE = 16; // how many blocks per pixel of the map
+    public static final int BUMPINESS = SCALE * 8;
+    public static final double NOISINESS = 10;
 
     //    mountain constants, fiddling with these is not as fun as it might seem
     public static final float ROUNDNESS = .5f;
     public static final float SHARPNESS = 7f;
     public static final float BUBBLINESS = 4f;
-    public static final float PYRAMIDNESS = ROUNDNESS+SHARPNESS+BUBBLINESS;
+    public static final float PYRAMIDNESS = (ROUNDNESS+SHARPNESS+BUBBLINESS) * 2;
 
     public static final int SPIKINESS = 17;
     public static int RANGINESS = 30;
@@ -36,5 +44,4 @@ public class VisiwaConfig {
     public static final int APPALACHIANITY = 12;
     public static float WHORLINESS = .2f;
     public static final int COASTALNESS = 10;
-
 }
