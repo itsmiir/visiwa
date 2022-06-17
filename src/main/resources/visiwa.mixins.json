@@ -12,8 +12,10 @@
     "gen.biome.AtlasBiomeMixin",
     "gen.biome.DebugInfoMixin",
     "gen.biome.PaintBiomesMixin",
-    "gen.chunk.DebugNoiseChunkGeneratorOverride",
-    "gen.chunk.VisiwaChunkGeneratorSettingsMixin"
+    "gen.chunk.NoiseChunkGeneratorMixin",
+    "gen.chunk.VisiwaChunkGeneratorSettingsMixin",
+    "gen.surfacebuilder.DefaultRuleOverride",
+    "gen.surfacebuilder.SurfacebuilderHeightmapFixer"
   ],
   "client": [
     "client.SetAtlasSeedClientsideMixin"

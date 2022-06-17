@@ -10,6 +10,7 @@
 package com.miir.visiwa.mixin.gen.chunk;
 
 import com.google.common.collect.Sets;
+import com.miir.visiwa.Visiwa;
 import com.miir.visiwa.world.gen.atlas.AtlasSubSampler;
 import net.minecraft.SharedConstants;
 import net.minecraft.block.BlockState;
@@ -19,6 +20,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.RegistryEntry;
+import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
@@ -30,25 +32,24 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 @Mixin(NoiseChunkGenerator.class)
-public abstract class DebugNoiseChunkGeneratorOverride {
+public abstract class NoiseChunkGeneratorMixin {
     @Shadow @Final protected BlockState defaultBlock;
     @Shadow protected abstract ChunkNoiseSampler method_41537(Chunk chunk, StructureAccessor structureAccessor, Blender blender, NoiseConfig noiseConfig);
     @Shadow @Final protected RegistryEntry<ChunkGeneratorSettings> settings;
-
     @Shadow @Final private static BlockState AIR;
-
     @Shadow public abstract int getSeaLevel();
 
-    @Shadow @Final private AquiferSampler.FluidLevelSampler fluidLevelSampler;
-
     /**
-     * @author
+     * @author miir
      */
     @Overwrite
     public CompletableFuture<Chunk> populateNoise(Executor executor, Blender blender, NoiseConfig noiseConfig, StructureAccessor structureAccessor, Chunk chunk) {
@@ -79,6 +80,7 @@ public abstract class DebugNoiseChunkGeneratorOverride {
             }
         }, executor);
     }
+
 
     private Chunk populateNoise(Blender blender, StructureAccessor structureAccessor, NoiseConfig noiseConfig, Chunk chunk, int minCubeY, int worldHeight) {
 //        get the noise sampler
@@ -183,5 +185,12 @@ public abstract class DebugNoiseChunkGeneratorOverride {
         }
         chunkNoiseSampler.method_40537(); // mark as finished
         return chunk;
+    }
+
+    @Inject(at = @At("HEAD"), method = "getHeight", cancellable = true)
+    private void mixin(int x, int z, Heightmap.Type heightmap, HeightLimitView world, NoiseConfig noiseConfig, CallbackInfoReturnable<Integer> cir) {
+        if (Visiwa.isAtlas) {
+            cir.setReturnValue(AtlasSubSampler.getHeight(x, z));
+        }
     }
 }

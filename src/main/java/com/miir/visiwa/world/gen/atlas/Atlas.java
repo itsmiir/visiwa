@@ -648,8 +648,10 @@ public class Atlas implements Serializable {
     public double lerpElevation(int xPx, int zPx, int xBlock, int zBlock) {
         int x0 = xBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
         int z0 = zBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
+        double x = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
+        double z = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
         return MathHelper.lerp2(
-                ((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE), ((zBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE),
+                x, z,
                 Visiwa.ATLAS.getY(xPx - 1 + x0, zPx - 1 + z0),
                 Visiwa.ATLAS.getY(xPx + x0, zPx - 1 + z0),
                 Visiwa.ATLAS.getY(xPx - 1 + x0, zPx + z0),
@@ -658,8 +660,10 @@ public class Atlas implements Serializable {
     public double lerpTemp(int xPx, int zPx, int xBlock, int zBlock) {
         int x0 = xBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
         int z0 = zBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
+        double x = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
+        double z = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
         return MathHelper.lerp2(
-                ((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE), ((zBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE),
+                x, z,
                 Visiwa.ATLAS.getT(xPx - 1 + x0, zPx - 1 + z0),
                 Visiwa.ATLAS.getT(xPx + x0, zPx - 1 + z0),
                 Visiwa.ATLAS.getT(xPx - 1 + x0, zPx + z0),
@@ -668,8 +672,10 @@ public class Atlas implements Serializable {
     public double lerpHumidity(int xPx, int zPx, int xBlock, int zBlock) {
         int x0 = xBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
         int z0 = zBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
+        double x = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
+        double z = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
         return MathHelper.lerp2(
-                ((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE), ((zBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE),
+                x, z,
                 Visiwa.ATLAS.getH(xPx - 1 + x0, zPx - 1 + z0),
                 Visiwa.ATLAS.getH(xPx + x0, zPx - 1 + z0),
                 Visiwa.ATLAS.getH(xPx - 1 + x0, zPx + z0),
@@ -678,8 +684,10 @@ public class Atlas implements Serializable {
     public double lerpWeirdness(int xPx, int zPx, int xBlock, int zBlock) {
         int x0 = xBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
         int z0 = zBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
+        double x = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
+        double z = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
         return MathHelper.lerp2(
-                ((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE), ((zBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE),
+                x, z,
                 Visiwa.ATLAS.getW(xPx - 1 + x0, zPx - 1 + z0),
                 Visiwa.ATLAS.getW(xPx + x0, zPx - 1 + z0),
                 Visiwa.ATLAS.getW(xPx - 1 + x0, zPx + z0),
@@ -689,8 +697,10 @@ public class Atlas implements Serializable {
     public double lerpErosion(int xPx, int zPx, int xBlock, int zBlock) {
         int x0 = xBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
         int z0 = zBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
+        double x = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
+        double z = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
         return MathHelper.lerp2(
-                ((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE), ((zBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE),
+                x, z,
                 Visiwa.ATLAS.getE(xPx - 1 + x0, zPx - 1 + z0),
                 Visiwa.ATLAS.getE(xPx + x0, zPx - 1 + z0),
                 Visiwa.ATLAS.getE(xPx - 1 + x0, zPx + z0),
@@ -699,8 +709,10 @@ public class Atlas implements Serializable {
     public double lerpContinentalness(int xPx, int zPx, int xBlock, int zBlock) {
         int x0 = xBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
         int z0 = zBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
+        double x = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
+        double z = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
         return MathHelper.lerp2(
-                ((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE), ((zBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE),
+                x, z,
                 Visiwa.ATLAS.getC(xPx - 1 + x0, zPx - 1 + z0),
                 Visiwa.ATLAS.getC(xPx + x0, zPx - 1 + z0),
                 Visiwa.ATLAS.getC(xPx - 1 + x0, zPx + z0),
@@ -710,8 +722,10 @@ public class Atlas implements Serializable {
     public double lerpBiomeNoise(int xPx, int zPx, int xBlock, int zBlock) {
         int x0 = xBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
         int z0 = zBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
+        double x = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
+        double z = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
         return MathHelper.lerp2(
-                ((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE), ((zBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE),
+                x, z,
                 Visiwa.ATLAS.getBiomeNoise(xPx - 1 + x0, zPx - 1 + z0),
                 Visiwa.ATLAS.getBiomeNoise(xPx + x0, zPx - 1 + z0),
                 Visiwa.ATLAS.getBiomeNoise(xPx - 1 + x0, zPx + z0),

@@ -31,19 +31,24 @@ import java.util.Random;
 import java.util.Set;
 
 public class Visiwa implements ModInitializer {
-
     /*
     todo:
-        create more height variation in terrain (implement in AtlasSubSampler::getSurfaceNoise or Atlas::buildMountains)
-        perhaps implement more noise layers for local height? (elevation modulates biome noise modulates a few more layers modulates the heightmap)
+        fix surfacebuilder (one layer of grass generates in the default rule)
         fix the giant patch of stone issue
+        create more height variation in terrain (implement in AtlasSubSampler::getSurfaceNoise or Atlas::buildMountains)
+        perhaps implement more noise layers for local height? (pixel elevation modulates subpixel biome noise modulates a few more layers modulates the heightmap)
+        move away from the heightmap to prepare for 3D biomes and features
         add custom biome tags
         change overwrites to more compat-friendly mixin type (conditional redirect?)
         regional noise variations (mountainous regions are more spiky, plains and beaches are more flat)
         better algorithms for temp, humidity, weirdness
         point-of-interest generation
             -rivers
-                -waterfalls
+                -completely redo the river biome
+                -regional river heights (watersheds)
+                -river vector logic (follows slopes down to a body of water)
+                -river delta biomes
+                -waterfalls (smooth river y-interpolation will not really look good with minecraft's blocky rivers)
                 -advanced river biome surface builders, carvers, and decorators
                     -river bottom material varies depending on local climate, geology (if a cave river, floor should be stone/gravel)
                     -carvers should carve through mountains in certain scenarios
@@ -53,15 +58,18 @@ public class Visiwa implements ModInitializer {
             -cliffs
             -fjords
             -mountain chains
+        **probable first release here**
         overhangs, 3D biome distributions (sea cliff overhangs into the sea, underneath is a cove biome or something
         new biomes
             -bush, lake, canyon, deep sea trench, ice sheet, mushroom cave, lava tubes, mossy forest, crater oasis, oasis,
-            geothermal pool, mesa, shallow (1 block deep) lake, river valley, tundra, painted mountains, bayou, redwood forest,
-            tide pools, alpine slopes, lush desert, pink forest
+            geothermal pool, mesa, shallow (1 block deep) lake, river valley, tundra (see screenshots), painted mountains, bayou, redwood forest,
+            tide pools, alpine slopes, lush desert, pink forest, lava field
             -exotic biomes?
                 -amethyst rift, jungle pillars, oceanic sinkhole, infernal leak, haunted woods, underground jungle, frozen cave,
-                lush rift, ancient forest, glowing cavern, glassed desert
+                lush rift, ancient forest, glowing cavern, glassed desert, impact crater, The Highlands, The Lowlands, frozen desert,
+                Terraces,
         more large-scale terrain features (river deltas, archipelagos, island chains)
+        **1.0**
         new structures?
             -cave river villages
     */

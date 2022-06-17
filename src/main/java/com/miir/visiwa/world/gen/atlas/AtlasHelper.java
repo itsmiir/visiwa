@@ -9,6 +9,7 @@
 
 package com.miir.visiwa.world.gen.atlas;
 
+import com.miir.visiwa.Visiwa;
 import com.miir.visiwa.VisiwaConfig;
 import net.minecraft.util.math.MathHelper;
 
@@ -178,6 +179,14 @@ public abstract class AtlasHelper {
         f -= .666666666666667f;
 //        and then map that to a subset of [0,255]
         return (f / 2f +.5f) *255;
+    }
+
+    public static double lerpTransform(double input) {
+        if (input < 0 || input > 1) {
+            Visiwa.LOGGER.error("tried to perform a smooth lerp on the value "+input+", which is not in [0, 1]!");
+            return input;
+        }
+        return -.5*Math.cos(Math.PI*input)-1; // it's that little smoothing function they used for neural networks
     }
 
     public enum PARAM {

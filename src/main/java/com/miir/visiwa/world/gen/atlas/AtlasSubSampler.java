@@ -35,7 +35,7 @@ public class AtlasSubSampler {
                     z/(float)VisiwaConfig.BUMPINESS*(Math.pow(2, n)));
             if (e < 0) {
                 e *= -e;
-                e /= 2;
+                e /= 5;
             }
             e *= (VisiwaConfig.NOISINESS * (y /(double) VisiwaConfig.SEA_LEVEL) * getNoiseMultiplier(x, y, z)) / (Math.pow(2, n+1));
             d += e;
