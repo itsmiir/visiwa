@@ -41,7 +41,7 @@ public class SetAtlasSeedClientsideMixin {
     private void mixin(String levelName, LevelStorage.Session session, ResourcePackManager dataPackManager, SaveLoader saveLoader, CallbackInfo ci) throws IOException {
         GeneratorOptions options = saveLoader.saveProperties().getGeneratorOptions();
         long seed = options.getSeed();
-        Visiwa.LOGGER.info("set seed");
+        Visiwa.LOGGER.info("set seed: "+seed);
         Visiwa.SEED = seed;
         Visiwa.ATLAS = new Atlas(seed);
         Visiwa.ATLAS.draw();

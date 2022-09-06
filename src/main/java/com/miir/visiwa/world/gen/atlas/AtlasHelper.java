@@ -181,12 +181,17 @@ public abstract class AtlasHelper {
         return (f / 2f +.5f) *255;
     }
 
-    public static double lerpTransform(double input) {
-        if (input < 0 || input > 1) {
+    public static double curp(double input) {
+        // curvy + interpolation
+        if (input < -1 || input > 1) {
             Visiwa.LOGGER.error("tried to perform a smooth lerp on the value "+input+", which is not in [0, 1]!");
             return input;
         }
-        return -.5*Math.cos(Math.PI*input)-1; // it's that little smoothing function they used for neural networks
+        return -Math.cos(Math.PI/2*(input+1)); // it's that little smoothing function they used for neural networks
+    }
+
+    public static Point pointFromCoords(int x, int y, int z) {
+        return new Point(x / VisiwaConfig.SCALE, z / VisiwaConfig.SCALE);
     }
 
     public enum PARAM {

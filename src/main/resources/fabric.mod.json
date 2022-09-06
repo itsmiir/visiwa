@@ -20,6 +20,9 @@
   "entrypoints": {
     "main": [
       "com.miir.visiwa.Visiwa"
+    ],
+    "preLaunch": [
+      "com.miir.visiwa.Visiwa"
     ]
   },
   "mixins": [
@@ -33,6 +36,5 @@
     "java": ">=17"
   },
   "suggests": {
-    "another-mod": "*"
   }
 }

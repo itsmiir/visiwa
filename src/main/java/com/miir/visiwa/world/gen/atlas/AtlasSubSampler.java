@@ -13,11 +13,12 @@ import com.miir.visiwa.Visiwa;
 import com.miir.visiwa.VisiwaConfig;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.util.math.MathHelper;
 
 public class AtlasSubSampler {
     private static final BlockState AIR = Blocks.AIR.getDefaultState();
     public static BlockState subPixelSample(int absoluteX, int absoluteY, int absoluteZ, int seaLevel, BlockState defaultFluid) {
-        int d = getHeight(absoluteX, absoluteZ);
+        int d = MathHelper.floor(getHeight(absoluteX, absoluteZ));
         if (absoluteY > d) {
             if (absoluteY < seaLevel) {
                 return defaultFluid;
@@ -27,35 +28,33 @@ public class AtlasSubSampler {
         return null;
     }
 
-    public static int getSurfaceNoise(int x, int y, int z) {
+    public static double getSurfaceNoise(int x, int y, int z) {
         double d = 0;
         for (int n = 0; n < VisiwaConfig.SUBPIXEL_OCTAVES; n++) {
             double e = Visiwa.ATLAS.getSimplex().sample(
                     x/(float)VisiwaConfig.BUMPINESS*(Math.pow(2, n)),
                     z/(float)VisiwaConfig.BUMPINESS*(Math.pow(2, n)));
-            if (e < 0) {
-                e *= -e;
-                e /= 5;
-            }
-            e *= (VisiwaConfig.NOISINESS * (y /(double) VisiwaConfig.SEA_LEVEL) * getNoiseMultiplier(x, y, z)) / (Math.pow(2, n+1));
+            e *= (VisiwaConfig.NOISINESS * getSubpixelNoise(x, y, z)) / (Math.pow(2, n+1));
             d += e;
         }
-        return (int) Math.round(d);
+        return d;
     }
 
-    private static double getNoiseMultiplier(int x, int y, int z) {
+    private static double getSubpixelNoise(int x, int y, int z) {
         int[] pos = AtlasHelper.coordToPixel(x, y, z);
-        return Visiwa.ATLAS.lerpBiomeNoise(pos[0], pos[2], x, z);
+        return Visiwa.ATLAS.sampleSubpixelNoise(x, y, z);
     }
 
-    public static int getHeight(int x, int z) {
-        if (!Visiwa.ATLAS.isBuilt()) {
+    public static double getHeight(int x, int z) {
+        if (Visiwa.ATLAS.isNotBuilt()) {
+
             throw new IllegalStateException("tried to perform an operation on an atlas that has not been built!");
         }
         int[] pos = AtlasHelper.coordToPixel(x, 0, z);
         int xPx = pos[0];
         int zPx = pos[2];
-        int y = (int) Visiwa.ATLAS.lerpElevation(xPx, zPx, x, z);
-        return y + AtlasSubSampler.getSurfaceNoise(x, y, z);
+        double y = Visiwa.ATLAS.lerpElevation(xPx, zPx, x, z);
+        double height = AtlasSubSampler.getSurfaceNoise(x, (int) Math.round(y), z);
+        return Visiwa.ATLAS.transformHeight(x, z, height, y, VisiwaConfig.VERTICAL_SCALE) + 100;
     }
 }

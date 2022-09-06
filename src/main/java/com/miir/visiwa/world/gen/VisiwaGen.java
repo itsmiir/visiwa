@@ -10,23 +10,14 @@
 package com.miir.visiwa.world.gen;
 
 import com.miir.visiwa.Visiwa;
-import com.miir.visiwa.world.biome.source.VisiwaBiomeSource;
-//import net.minecraft.client.world.GeneratorType;
-import net.minecraft.structure.StructureSet;
-import net.minecraft.util.math.noise.DoublePerlinNoiseSampler;
-import net.minecraft.util.registry.DynamicRegistryManager;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
-import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.WorldPreset;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
-import net.minecraft.world.gen.chunk.ChunkGeneratorSettings;
-import net.minecraft.world.gen.chunk.NoiseChunkGenerator;
 
 public class VisiwaGen {
     public static final RegistryKey<WorldPreset> ATLAS = RegistryKey.of(Registry.WORLD_PRESET_KEY, Visiwa.id("atlas"));
 
-//    public static final GeneratorType ATLAS = new GeneratorType("visiwa") {
+//    public static final GeneratorOptions ATLAS = new GeneratorOptions("visiwa") {
 //        @Override
 //        public ChunkGenerator getChunkGenerator(DynamicRegistryManager registryManager, long seed) {
 //            Registry<Biome> biomeRegistry = registryManager.get(Registry.BIOME_KEY);

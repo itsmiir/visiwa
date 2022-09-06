@@ -20,16 +20,28 @@ public class VisiwaConfig {
     public static final int COLD_BIOME_TEMP = 50;
     public static final int SNOWY_BIOME_TEMP = 0;
     public static final int SEA_LEVEL = 63;
-    public static final double BIOME_SIZE = 128;
-    public static final int BLURRINESS = 2; // how many times to smooth out noise
+    public static final double BIOME_SIZE = 64;
+    public static final int BLURRINESS = 1; // how many times to smooth out noise
+    public static final float SUBPIXEL_SCALE = 256; // how much to divide the subpixel noise sampling by
+    public static final double VERTICAL_SCALE = 1;
+
+    public static final int PIT_CHASMS_DEPTH = 10;
+    public static final int CANYONS_DEPTH = 30;
+    public static final int RAVINES_DEPTH = 40;
+    public static final int TABLELAND_DEPTH = 64;
+    public static final int PANCAKE_DEPTH = 128;
+    public static final int FLAT_WITH_HILLS_DEPTH = 192;
+    public static final int TERRACE_DEPTH = 70;
+    public static final int MOUNTAINS_DEPTH = 80;
+
     public static float SIGMA = 3f; // spread-outedness of the terrain
     public static final int SCALE_FACTOR = 4; // blocks per pixel (this should be pretty high)
     public static final int HEIGHTMAP_OCTAVES = 6;
     public static final int SUBPIXEL_OCTAVES = 4;
     public static final float THIRSTINESS = 0.1f;
-    public static final int SCALE = 16; // how many blocks per pixel of the map
-    public static final int BUMPINESS = SCALE * 8;
-    public static final double NOISINESS = 10;
+    public static final int SCALE = 128; // how many blocks per pixel of the map
+    public static final int BUMPINESS = 128;
+    public static final double NOISINESS = 15;
 
     //    mountain constants, fiddling with these is not as fun as it might seem
     public static final float ROUNDNESS = .5f;

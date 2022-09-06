@@ -7,32 +7,10 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.miir.visiwa.mixin.gen.biome;
+package com.miir.visiwa.world.gen.atlas;
 
-import com.miir.visiwa.Visiwa;
-import com.miir.visiwa.world.gen.atlas.AtlasHelper;
-import com.miir.visiwa.world.gen.atlas.AtlasSubSampler;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.biome.source.BiomeCoords;
-import net.minecraft.world.biome.source.MultiNoiseBiomeSource;
-import net.minecraft.world.biome.source.util.MultiNoiseUtil;
-import net.minecraft.world.biome.source.util.VanillaBiomeParameters;
-import net.minecraft.world.gen.densityfunction.DensityFunctions;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-
-import java.util.List;
-
-@Mixin(MultiNoiseBiomeSource.class)
-public class DebugInfoMixin {
-    /**
-     * @author
-     */
-    @Overwrite
-    public void addDebugInfo(List<String> info, BlockPos pos, MultiNoiseUtil.MultiNoiseSampler noiseSampler) {
-        info.add("elevation: " + (AtlasSubSampler.getHeight(pos.getX(), pos.getZ()) + 1));
-        info.add("zone: "+Visiwa.ZONE);
-    }
+@FunctionalInterface
+public interface HeightTransformProvider {
+//    i don't know what a formProvider is but i can see why you're triggered XD
+    double transform(double noise, double baseHeight, double scale);
 }

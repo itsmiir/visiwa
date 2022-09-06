@@ -7,28 +7,37 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.miir.visiwa.mixin.gen.surfacebuilder;
+package com.miir.visiwa.mixin.server;
 
 import com.miir.visiwa.Visiwa;
-import com.miir.visiwa.world.gen.atlas.AtlasSubSampler;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.gen.surfacebuilder.MaterialRules;
+import com.miir.visiwa.world.gen.atlas.Atlas;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.gen.GeneratorOptions;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
-@Mixin(MaterialRules.MaterialRuleContext.class)
-public class SurfacebuilderHeightmapFixer {
-    @Shadow int x;
-    @Shadow int z;
-    @Shadow int runDepth;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
-    @Inject(at = @At("HEAD"), method = "method_39551", cancellable = true)
-    private void mixin(CallbackInfoReturnable<Integer> cir) {
-        if (Visiwa.isAtlas) {
-            cir.setReturnValue(MathHelper.floor(AtlasSubSampler.getHeight(x, z) + this.runDepth - 8));
+@Mixin(MinecraftServer.class)
+public class GetSeedMixin {
+    @Inject(method = "startServer", at = @At("TAIL"), locals = LocalCapture.CAPTURE_FAILHARD)
+    private static <S extends MinecraftServer> void mixin(Function<Thread, S> serverFactory, CallbackInfoReturnable<S> cir, AtomicReference ref, Thread thread, MinecraftServer server) throws IOException {
+        GeneratorOptions options = server.getSaveProperties().getGeneratorOptions();
+        long seed = options.getSeed();
+        Visiwa.LOGGER.info("setting atlas for current world...");
+        Visiwa.SEED = seed;
+        Visiwa.ATLAS = new Atlas(seed);
+        Visiwa.ATLAS.draw();
+        if (Visiwa.DEV_ENV) {
+            Visiwa.ATLAS.printAll("output");
         }
+        Visiwa.BIOMES = options.getChunkGenerator().getBiomeSource().getBiomes().stream().toList();
+        Visiwa.SEA_LEVEL = options.getChunkGenerator().getSeaLevel();
+        Visiwa.LOGGER.info("done!");
     }
 }

@@ -17,7 +17,9 @@ import net.minecraft.world.biome.source.BiomeCoords;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.biome.source.MultiNoiseBiomeSource;
 import net.minecraft.world.biome.source.util.MultiNoiseUtil;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -27,6 +29,8 @@ import java.util.stream.Stream;
 
 @Mixin(MultiNoiseBiomeSource.class)
 public abstract class AtlasBiomeMixin extends BiomeSource {
+
+    @Shadow @Final private MultiNoiseUtil.Entries<RegistryEntry<Biome>> biomeEntries;
 
     protected AtlasBiomeMixin(Stream<RegistryEntry<Biome>> biomeStream) {
         super(biomeStream);
@@ -42,7 +46,8 @@ public abstract class AtlasBiomeMixin extends BiomeSource {
             if (biome.isPresent()) {
                 cir.setReturnValue(biome.get());
             } else {
-                Visiwa.LOGGER.error("could not find a biome to match the position "+i+", "+j+", "+k+"!");
+                cir.setReturnValue(Visiwa.BIOMES.get(1));
+//                Visiwa.LOGGER.error("could not find a biome to match the position "+i+", "+j+", "+k+"!");
             }
         }
     }

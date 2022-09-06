@@ -50,38 +50,9 @@ public abstract class NoiseChunkGeneratorMixin {
 
     /**
      * @author miir
+     * @reason
      */
     @Overwrite
-    public CompletableFuture<Chunk> populateNoise(Executor executor, Blender blender, NoiseConfig noiseConfig, StructureAccessor structureAccessor, Chunk chunk) {
-//        get the GenerationShapeConfig, which contains some noise settings from the datapack
-        GenerationShapeConfig generationShapeConfig = this.settings.value().generationShapeConfig().method_42368(chunk.getHeightLimitView());
-        int minimumY = generationShapeConfig.minimumY(); // limited to multiples of 16
-        int minimumBlockY = MathHelper.floorDiv(minimumY, generationShapeConfig.verticalBlockSize()); // for surface, 8
-        int worldBlockHeight = MathHelper.floorDiv(generationShapeConfig.height(), generationShapeConfig.verticalBlockSize()); // verticalSize stretches the landmass (higher value == higher land)
-        // if height is 0 nothing should generate
-        if (worldBlockHeight <= 0) {
-            return CompletableFuture.completedFuture(chunk);
-        }
-
-        // lock each chunk section (presumably cannot be edited elsewhere?)
-        int maxSectionIndex = chunk.getSectionIndex(worldBlockHeight * generationShapeConfig.verticalBlockSize() - 1 + minimumY);
-        int minSectionIndex = chunk.getSectionIndex(minimumY);
-        HashSet<ChunkSection> chunkSections = Sets.newHashSet();
-        for (int n = maxSectionIndex; n >= minSectionIndex; --n) {
-            ChunkSection chunkSection = chunk.getSection(n);
-            chunkSection.lock();
-            chunkSections.add(chunkSection);
-        }
-
-//        send the chunk to a worker thread for generation
-        return CompletableFuture.supplyAsync(Util.debugSupplier("wgen_fill_noise", () -> this.populateNoise(blender, structureAccessor, noiseConfig, chunk, minimumBlockY, worldBlockHeight)), Util.getMainWorkerExecutor()).whenCompleteAsync((c, throwable) -> {
-            for (ChunkSection chunkSection : chunkSections) {
-                chunkSection.unlock();
-            }
-        }, executor);
-    }
-
-
     private Chunk populateNoise(Blender blender, StructureAccessor structureAccessor, NoiseConfig noiseConfig, Chunk chunk, int minCubeY, int worldHeight) {
 //        get the noise sampler
         ChunkNoiseSampler chunkNoiseSampler = chunk.getOrCreateChunkNoiseSampler(chunk1 -> this.method_41537(chunk1, structureAccessor, blender, noiseConfig));
@@ -125,8 +96,6 @@ public abstract class NoiseChunkGeneratorMixin {
                         }
 
 //                        the percentage of the way through the top of the chunk we are
-                        double yLerpAmount = (double)deltaY / (double)verticalBlockSize;
-                        chunkNoiseSampler.sampleNoiseY(absoluteY, yLerpAmount);
 
 //                        get local and absolute x coords
                         for (int x = 0; x < horizontalBlockSize; ++x) {
@@ -134,16 +103,11 @@ public abstract class NoiseChunkGeneratorMixin {
                             int localX = absoluteX & 0xF;
 
 //                            the percentage of the way through the chunk we are (x direction)
-                            double xLerpAmount = (double)x / (double)horizontalBlockSize;
-                            chunkNoiseSampler.sampleNoiseX(absoluteX, xLerpAmount);
 
 //                            get local and absolute z coords
                             for (int z = 0; z < horizontalBlockSize; ++z) {
                                 int absoluteZ = chunkStartZ + chunkCubeZ * horizontalBlockSize + z;
                                 int localZ = absoluteZ & 0xF;
-
-                                double zLerpAmount = (double) z / (double) horizontalBlockSize;
-                                chunkNoiseSampler.sampleNoise(absoluteZ, zLerpAmount); // sampleNoise should probably be sampleNoiseZ
 
 //                                sample the blockstate at the current sample point
                                 BlockState blockState = AtlasSubSampler.subPixelSample(absoluteX, absoluteY, absoluteZ, seaLevel, defaultFluid);
@@ -190,7 +154,7 @@ public abstract class NoiseChunkGeneratorMixin {
     @Inject(at = @At("HEAD"), method = "getHeight", cancellable = true)
     private void mixin(int x, int z, Heightmap.Type heightmap, HeightLimitView world, NoiseConfig noiseConfig, CallbackInfoReturnable<Integer> cir) {
         if (Visiwa.isAtlas) {
-            cir.setReturnValue(AtlasSubSampler.getHeight(x, z));
+            cir.setReturnValue(MathHelper.floor(AtlasSubSampler.getHeight(x, z) + 1));
         }
     }
 }

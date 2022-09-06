@@ -10,11 +10,12 @@
 package com.miir.visiwa;
 
 import com.miir.elixir.Elixir;
-import com.miir.visiwa.world.gen.atlas.Atlas;
-import com.miir.visiwa.world.gen.atlas.AtlasHelper;
-import com.miir.visiwa.world.gen.chunk.VisiwaChunkGenerator;
 import com.miir.visiwa.world.gen.VisiwaGen;
+import com.miir.visiwa.world.gen.atlas.Atlas;
+import com.miir.visiwa.world.gen.chunk.VisiwaChunkGenerator;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryEntry;
@@ -24,18 +25,22 @@ import net.minecraft.world.gen.WorldPreset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 
-public class Visiwa implements ModInitializer {
+public class Visiwa implements ModInitializer, PreLaunchEntrypoint {
     /*
     todo:
-        fix surfacebuilder (one layer of grass generates in the default rule)
-        fix the giant patch of stone issue
-        create more height variation in terrain (implement in AtlasSubSampler::getSurfaceNoise or Atlas::buildMountains)
+        perfect heightmap (scale: 128/px)
+        -build some bottom up noise to meet the top-down noise
+            -more heightmap diversity
+                -implement all HeightTransformProviders
+                -implement lerper between HeightTransformProviders
+            -fix pixelation of macroscopic noise (esp. beaches)
+            -carvers
+        meganoise (canyons, mega tepuis, mountains, etc
+        change biome painting (more noise octaves)
         perhaps implement more noise layers for local height? (pixel elevation modulates subpixel biome noise modulates a few more layers modulates the heightmap)
         move away from the heightmap to prepare for 3D biomes and features
         add custom biome tags
@@ -63,11 +68,11 @@ public class Visiwa implements ModInitializer {
         new biomes
             -bush, lake, canyon, deep sea trench, ice sheet, mushroom cave, lava tubes, mossy forest, crater oasis, oasis,
             geothermal pool, mesa, shallow (1 block deep) lake, river valley, tundra (see screenshots), painted mountains, bayou, redwood forest,
-            tide pools, alpine slopes, lush desert, pink forest, lava field
+            tide pools, alpine slopes, lush desert, pink forest, lava field, spiny forest (wikipedia), rainforest (perhaps redone jungle?)
             -exotic biomes?
                 -amethyst rift, jungle pillars, oceanic sinkhole, infernal leak, haunted woods, underground jungle, frozen cave,
                 lush rift, ancient forest, glowing cavern, glassed desert, impact crater, The Highlands, The Lowlands, frozen desert,
-                Terraces,
+                Terraces, thermal tepuy,
         more large-scale terrain features (river deltas, archipelagos, island chains)
         **1.0**
         new structures?
@@ -76,16 +81,18 @@ public class Visiwa implements ModInitializer {
 
     public static final String ID = "visiwa";
     public static final Logger LOGGER = LoggerFactory.getLogger(ID);
-    public static final boolean DEBUG_BIOME = false;
+    public static final boolean DEBUG_BIOME = true;
+    public static final boolean DEV_ENV = true;// FabricLoader.getInstance().isDevelopmentEnvironment();
+    public static String ZONE = "";
 
 
-    public static boolean isAtlas = true;
+    public static boolean isAtlas = false;
     public static List<RegistryEntry<Biome>> BIOMES;
     public static int SEA_LEVEL;
     public static long SEED = 0L;
 
     public static ArrayList<RegistryKey<WorldPreset>> NEW_WORLD_TYPES = new ArrayList<>();
-    //    public static final Random random = new Random();
+    public static final Random RANDOM = new Random();
 
 
     public static Identifier id(String path) {
@@ -108,4 +115,18 @@ public class Visiwa implements ModInitializer {
         Registry.register(Registry.CHUNK_GENERATOR, Visiwa.id("atlas"), VisiwaChunkGenerator.CODEC);
     }
 
+    @Override
+    public void onPreLaunch() {
+//        long seed = RANDOM.nextLong();
+//        ATLAS.create(seed);
+//        ATLAS.draw();
+//        try {
+//            ATLAS.printOut(AtlasHelper.PARAM.BIOME_NOISE, "biome_" + seed);
+//            LOGGER.info(System.getProperties().getProperty("user.dir"));
+//
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        throw new IllegalStateException();
+    }
 }

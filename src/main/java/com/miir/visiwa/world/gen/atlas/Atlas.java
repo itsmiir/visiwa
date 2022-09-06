@@ -13,6 +13,8 @@ import com.miir.visiwa.Visiwa;
 import com.miir.visiwa.VisiwaConfig;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.integrated.IntegratedServer;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.noise.SimplexNoiseSampler;
 import net.minecraft.util.math.random.CheckedRandom;
@@ -35,15 +37,99 @@ import java.util.stream.Stream;
 public class Atlas implements Serializable {
     public static final Codec<Atlas> CODEC;
     public static final int DEPTH = 8; // how many values each pixel of the atlas has
-    private static final int PEAKS = 5;
+    private static final int MOUNTAINOUS = 5;
+    private static final int FLAT_WITH_HILLS_DEPTH = 1;
     private OptionalLong seed;
     public boolean regional; // creates a realistic (life-sized) map, but with a limited climate range
     public final int scaleFactor;
     private final int width;
     private final int height;
 
+
+//        these should be done with a carver
+    private static HeightTransformProvider CANYONS;
+    private static HeightTransformProvider PIT_CHASMS;
+
+
+    private static final HeightTransformProvider LINEAR;
+    private static final HeightTransformProvider TABLELAND;
+    //    it's like superflat, but not all the way
+    private static final HeightTransformProvider KINDAFLAT;
+    private static final HeightTransformProvider FLAT_WITH_HILLS;
+    private static HeightTransformProvider TERRACES;
+    private static HeightTransformProvider MOUNTAINS;
+    private static HeightTransformProvider PILLARS;
+    static {
+        LINEAR = (h, y, s) -> h * s;
+        KINDAFLAT = (noise, baseHeight, scale) -> noise * 0.2 * scale;
+        TABLELAND = (noise, baseHeight, scale) -> {
+            double h;
+            double h1 = (VisiwaConfig.NOISINESS / 12);
+            double h2 = (0.2 * VisiwaConfig.NOISINESS - VisiwaConfig.NOISINESS / 12) * 12;
+            if (noise < 0) {
+                h = 0.3 * noise;
+            } else if (noise < VisiwaConfig.NOISINESS / 12) {
+                h = noise;
+            } else if (noise < 0.2 * VisiwaConfig.NOISINESS) {
+                h = h1 + (noise - VisiwaConfig.NOISINESS / 12) * 12;
+            } else {
+                h = h1 + h2 + (noise - 0.2 * VisiwaConfig.NOISINESS) * 0.2;
+            }
+            return h*scale;
+        };
+        FLAT_WITH_HILLS = (noise, baseHeight, scale) -> {
+            double h;
+            double h1 = (0.4 * VisiwaConfig.NOISINESS / 3);
+            double h2 = (0.8 * VisiwaConfig.NOISINESS - VisiwaConfig.NOISINESS / 3) * 1.5;
+            if (noise < VisiwaConfig.NOISINESS / 3) {
+                h = 0.4 * noise;
+            } else if (noise < 0.8 * VisiwaConfig.NOISINESS) {
+                h = h1 + (noise - VisiwaConfig.NOISINESS / 3) * 1.5;
+            } else {
+                h = h1 + h2 + (noise - 0.8 * VisiwaConfig.NOISINESS) * 0.5;
+            }
+            return h*scale;
+        };
+    }
+
+    public double transformHeight(int x, int z, double h, double y, double noise) {
+        HeightTransformProvider[] list = new HeightTransformProvider[2];
+        int[] px = AtlasHelper.coordToPixel(x, (int) y, z);
+        double β = this.lerpHumidity(px[0], px[2],x, z);
+//        a = 25;
+        double Δ = 0;
+        /*
+       pit chasms, tableland, canyons, ravines, pancake, flat w/ hills, mountains, pillars
+       river valleys, rolling hills
+         */
+        if (β < VisiwaConfig.TABLELAND_DEPTH) {
+            list[0] = TABLELAND;
+            list[1] = TABLELAND;
+            Visiwa.ZONE = "tepuy";
+        } else if (β < VisiwaConfig.PANCAKE_DEPTH) {
+            list[0] = TABLELAND;
+            list[1] = KINDAFLAT;
+            Visiwa.ZONE = "tepuy edge";
+            Δ = (β - VisiwaConfig.TABLELAND_DEPTH) / (float)(VisiwaConfig.PANCAKE_DEPTH - VisiwaConfig.TABLELAND_DEPTH);
+        } else if (β < VisiwaConfig.FLAT_WITH_HILLS_DEPTH) {
+            list[0] = KINDAFLAT;
+            list[1] = FLAT_WITH_HILLS;
+            Visiwa.ZONE = "flat";
+            Δ = (β - VisiwaConfig.PANCAKE_DEPTH) / (float)(VisiwaConfig.FLAT_WITH_HILLS_DEPTH - VisiwaConfig.PANCAKE_DEPTH);
+        } else if (β < VisiwaConfig.TERRACE_DEPTH) {
+        } else if (β < VisiwaConfig.MOUNTAINS_DEPTH) {
+        } else {
+            list[0] = FLAT_WITH_HILLS;
+            list[1] = FLAT_WITH_HILLS;
+            Visiwa.ZONE = "flat with hills";
+        }
+        double d1 = list[0].transform(h, y, noise);
+        double d2 = list[1].transform(h, y, noise);
+        return MathHelper.lerp(Δ, d2, d1);
+    }
+
     public SimplexNoiseSampler getSimplex() {
-        if (!this.simplex.isPresent()) {
+        if (this.simplex.isEmpty()) {
             throw new IllegalStateException("tried to perform an action on an empty atlas!");
         }
         return simplex.get();
@@ -106,8 +192,8 @@ public class Atlas implements Serializable {
         this.map = new int[height][width][DEPTH];
     }
 
-    public boolean hasSeed() {
-        return this.seed.isPresent();
+    public boolean hasNoSeed() {
+        return this.seed.isEmpty();
     }
 
     public Atlas create(long seed) {
@@ -182,8 +268,8 @@ public class Atlas implements Serializable {
         return this.north;
     }
 
-    public boolean isBuilt() {
-        return this.built;
+    public boolean isNotBuilt() {
+        return !this.built;
     }
 
     public boolean isLand(Point point) {
@@ -195,7 +281,7 @@ public class Atlas implements Serializable {
     }
 
     public Atlas draw() {
-        if (!this.hasSeed()) {
+        if (this.hasNoSeed()) {
             throw new IllegalStateException("tried to draw an atlas that had no seed!");
         }
         this.simplexTerrain();
@@ -203,11 +289,21 @@ public class Atlas implements Serializable {
         this.built = true;
         this.findCoastlines();
         this.feelTemperature();
-        this.aerate();
+//        this.aerate();
         this.testHumidity();
         this.seeWeirdness();
         this.postProcess();
         return this;
+    }
+
+    public double sampleSubpixelNoise(int x, int y, int z) {
+        if (this.isNotBuilt()) {
+            throw new IllegalStateException("tried to perform an operation on a blank atlas!");
+        }
+        Point point = AtlasHelper.pointFromCoords(x, y, z);
+        double d = this.lerpBiomeNoise(point.x, point.y, x, z);
+        d =3;
+        return Math.max(this.simplex.get().sample((x / VisiwaConfig.SUBPIXEL_SCALE) + this.width, (z / VisiwaConfig.SUBPIXEL_SCALE) + this.height), this.simplex.get().sample(x / VisiwaConfig.SUBPIXEL_SCALE, z / VisiwaConfig.SUBPIXEL_SCALE))* d;
     }
 
     private void postProcess() {
@@ -215,7 +311,7 @@ public class Atlas implements Serializable {
             for (int y = this.height - 2; y > 0; y--) {
                 for (int x = 1; x < this.width - 1; x++) {
                     this.setBiomeNoise(AtlasHelper.clean(
-                            (this.getBiomeNoise(x, y) +
+                            (this.getBiomeNoise(x, y) * 6 +
                                     this.getBiomeNoise(x - 1, y - 1) +
                                     this.getBiomeNoise(x, y - 1) +
                                     this.getBiomeNoise(x + 1, y - 1) +
@@ -223,7 +319,17 @@ public class Atlas implements Serializable {
                                     this.getBiomeNoise(x + 1, y) +
                                     this.getBiomeNoise(x - 1, y + 1) +
                                     this.getBiomeNoise(x, y + 1) +
-                                    this.getBiomeNoise(x + 1, y + 1)) / 9.0), x, y);
+                                    this.getBiomeNoise(x + 1, y + 1)) / 14.0), x, y);
+                    this.setD(AtlasHelper.clean(
+                            (this.getBiomeNoise(x, y) * 6 +
+                                    this.getD(x - 1, y - 1) +
+                                    this.getD(x, y - 1) +
+                                    this.getD(x + 1, y - 1) +
+                                    this.getD(x - 1, y) +
+                                    this.getD(x + 1, y) +
+                                    this.getD(x - 1, y + 1) +
+                                    this.getD(x, y + 1) +
+                                    this.getD(x + 1, y + 1)) / 14.0), x, y);
                 }
             }
         }
@@ -252,7 +358,6 @@ public class Atlas implements Serializable {
             }
         }
     }
-
     private void buildMountains() {
         java.util.Random random = this.threadSafeRandom.get();
         SimplexNoiseSampler simplex = this.simplex.get();
@@ -271,9 +376,12 @@ public class Atlas implements Serializable {
                         double a2 = AtlasHelper.getAngle(pt0, pt1);
                         if (a2 < a + VisiwaConfig.WHORLINESS && a2 > a - VisiwaConfig.WHORLINESS) {
                             rangePts.add(pt1);
-                            rangePts.add(new Point(
+                            this.setD(Atlas.MOUNTAINOUS, pt1);
+                            Point pt2 = new Point(
                                     MathHelper.clamp(pt1.x + random.nextInt(VisiwaConfig.SPIKINESS), 0, this.width - 1),
-                                    MathHelper.clamp(pt1.y + random.nextInt(VisiwaConfig.SPIKINESS), 0, this.height - 1)));
+                                    MathHelper.clamp(pt1.y + random.nextInt(VisiwaConfig.SPIKINESS), 0, this.height - 1));
+                            rangePts.add(pt2);
+                            this.setD(Atlas.MOUNTAINOUS, pt2);
                             pt0 = pt1;
                             a = a2;
                             break;
@@ -284,8 +392,10 @@ public class Atlas implements Serializable {
         }
         for (Point point : land) {
             Point ref = point;
+            this.setD(FLAT_WITH_HILLS_DEPTH, point);
             if (rangePts.contains(point)) {
                 ref = new Point(point.x, MathHelper.clamp(point.y + 1, 0, this.height - 1));
+                this.setD(MOUNTAINOUS, point);
             }
             Point[] anchor = AtlasHelper.findClosestPoint(ref, rangePts, 2);
             Point anchor1 = anchor[0];
@@ -297,15 +407,27 @@ public class Atlas implements Serializable {
             int h3 = 255-AtlasHelper.clean(128 * simplex.sample(ref.x/255.0, ref.y/255.0));
             double h = (h1 * VisiwaConfig.ROUNDNESS + h2 * VisiwaConfig.SHARPNESS + h3 * VisiwaConfig.BUBBLINESS)
                     / ((VisiwaConfig.BUBBLINESS + VisiwaConfig.ROUNDNESS + VisiwaConfig.SHARPNESS));
-//            h /= 255;
-//            h =
             if (d1 < 5) {
-                this.setBiomeNoise(Atlas.PEAKS, point);
+                this.setBiomeNoise(5-(int) d1, point);
             } else {
                 this.setBiomeNoise(1, point);
             }
             int currY = this.getY(point);
             this.setY(AtlasHelper.clean((h+currY*2)/3), point);
+        }
+        for (int y = this.height - 2; y > 0; y--) {
+            for (int x = 1; x < this.width - 1; x++) {
+                this.setD(AtlasHelper.clean((
+                        this.getD(x, y) +
+                        this.getY(x - 1, y - 1) +
+                        this.getY(x, y - 1) +
+                        this.getY(x + 1, y - 1) +
+                        this.getY(x - 1, y) +
+                        this.getY(x + 1, y) +
+                        this.getY(x - 1, y + 1) +
+                        this.getY(x, y + 1) +
+                        this.getY(x + 1, y + 1)) / 9.0), x, y);
+            }
         }
     }
     private void findCoastlines() {
@@ -364,28 +486,28 @@ public class Atlas implements Serializable {
             for (int x = 1; x < this.width - 1; x++) {
                 // since the simplex sampler returns the same value for the same coordinate given the same seed, this
                 // has the effect of approximately mapping low airflow areas to islands
-                this.setA(this.getA(x, y) - AtlasHelper.clean(255 * (simplex.sample(x / 64.0, y / 64.0) + 0.5) / 2.0), x, y);
+                this.setD(this.getD(x, y) - AtlasHelper.clean(255 * (simplex.sample(x / 64.0, y / 64.0) + 0.5) / 2.0), x, y);
             }
         }
         if (!this.regional) {
             for (int y = this.height - 2; y > 0; y--) {
                 for (int x = 1; x < this.width - 1; x++) {
                     if (this.isLand(x, y)) {
-                        this.setA(this.getA(x, y) - AtlasHelper.clean(this.getA(x, y + 1) * (((float) this.getY(x, y)) / this.getY(x, y + 1)) + this.getC(x, y) / 4.0), x, y);
+                        this.setD(this.getD(x, y) - AtlasHelper.clean(this.getD(x, y + 1) * (((float) this.getY(x, y)) / this.getY(x, y + 1)) + this.getC(x, y) / 4.0), x, y);
                     }
                 }
             }
             for (int y = this.height - 2; y > 0; y--) {
                 for (int x = 1; x < this.width - 1; x++) {
-                    this.setA(AtlasHelper.clean((this.getA(x, y) +
-                            this.getA(x - 1, y - 1) +
-                            this.getA(x, y - 1) +
-                            this.getA(x + 1, y - 1) +
-                            this.getA(x - 1, y) +
-                            this.getA(x + 1, y) +
-                            this.getA(x - 1, y + 1) +
-                            this.getA(x, y + 1) +
-                            this.getA(x + 1, y + 1)) / 9.0), x, y);
+                    this.setD(AtlasHelper.clean((this.getD(x, y) +
+                            this.getD(x - 1, y - 1) +
+                            this.getD(x, y - 1) +
+                            this.getD(x + 1, y - 1) +
+                            this.getD(x - 1, y) +
+                            this.getD(x + 1, y) +
+                            this.getD(x - 1, y + 1) +
+                            this.getD(x, y + 1) +
+                            this.getD(x + 1, y + 1)) / 9.0), x, y);
                 }
             }
         }
@@ -394,7 +516,7 @@ public class Atlas implements Serializable {
         SimplexNoiseSampler simplex = this.simplex.get();
         for (int x = 0; x < this.width; x++) {
             for (int z = 0; z < this.height; z++) {
-                this.setH(AtlasHelper.clean((simplex.sample(x-this.width, z-this.width) / 2 + 0.5) * 255), x, z);
+                this.setH(AtlasHelper.clean((simplex.sample((x-this.width)/VisiwaConfig.BIOME_SIZE, (z-this.width)/VisiwaConfig.BIOME_SIZE) / 2 + 0.5) * 255), x, z);
             }
         }
     }
@@ -424,20 +546,22 @@ public class Atlas implements Serializable {
                     switch (p) {
                         case CONTINENTALNESS -> v = (this.getC(x, y) & 0xFF);
                         case TEMPERATURE -> v = (this.getT(x, y) & 0xFF);
-                        case AIRFLOW -> v = (this.getA(x, y) & 0xFF);
+                        case AIRFLOW -> v = (this.getD(x, y) & 0xFF);
                         case BIOME_NOISE -> v = (this.getBiomeNoise(x, y) & 0xFF);
                         case EROSION -> v = (this.getE(x, y) & 0xFF);
                         case HUMIDITY -> v = (this.getH(x, y) & 0xFF);
                         case WEIRDNESS -> v = (this.getW(x, y) & 0xFF);
                         default -> v = (this.getY(x, y) & 0xFF);
                     }
-                    float h = v / 255.0f;
-                    int c = AtlasHelper.lerpColor((h - 0.5f) * 2, p, true);
+                        float h = v / 255.0f;
+                    int c = AtlasHelper.lerpColor((h - 0.5f) * 2, p, false);
                     img.setRGB(x, y, c);
                 }
             }
             ImageIO.write(img, "png", new File(path + ".png"));
-            System.out.println("Image generated");
+            Visiwa.LOGGER.info("Image generated");
+        } else {
+            throw new IllegalStateException("tried to perform an operation on a blank atlas1");
         }
     }
 
@@ -451,7 +575,7 @@ public class Atlas implements Serializable {
         return points;
     }
     private Point randomPoint() {
-        if (!this.hasSeed()) {
+        if (this.hasNoSeed()) {
             throw new IllegalStateException("tried to perform an operation on a blank atlas!");
         }
         java.util.Random random = this.threadSafeRandom.get();
@@ -460,7 +584,7 @@ public class Atlas implements Serializable {
         return new Point(x, y);
     }
     private ArrayList<Point> randomPoints(ArrayList<Point> points, int k) {
-        if (!this.hasSeed()) {
+        if (this.hasNoSeed()) {
             throw new IllegalStateException("tried to perform an operation on a blank atlas!");
         }
         java.util.Random random = this.threadSafeRandom.get();
@@ -519,10 +643,10 @@ public class Atlas implements Serializable {
     public int getT(int x, int y) {
         return this.getMap()[MathHelper.clamp(y, 0, this.height - 1)][MathHelper.clamp(x, 0, this.width - 1)][2];
     }
-    public int getA(Point point) {
+    public int getD(Point point) {
         return this.getMap()[MathHelper.clamp(point.y, 0, this.height - 1)][MathHelper.clamp(point.x, 0, this.width - 1)][3];
     }
-    public int getA(int x, int y) {
+    public int getD(int x, int y) {
         return this.getMap()[MathHelper.clamp(y, 0, this.height - 1)][MathHelper.clamp(x, 0, this.width - 1)][3];
     }
     public int getH(Point point) {
@@ -575,11 +699,11 @@ public class Atlas implements Serializable {
         this.map[MathHelper.clamp(y, 0, this.height)][MathHelper.clamp(x, 0, this.width)][2] = AtlasHelper.clean(i);
     }
 
-    private void setA(int i, Point point) {
+    private void setD(int i, Point point) {
         this.map[MathHelper.clamp(point.y, 0, this.height)][MathHelper.clamp(point.x, 0, this.width)][3] = AtlasHelper.clean(i);
     }
 
-    private void setA(int i, int x, int y) {
+    private void setD(int i, int x, int y) {
         this.map[MathHelper.clamp(y, 0, this.height)][MathHelper.clamp(x, 0, this.width)][3] = AtlasHelper.clean(i);
     }
 
@@ -648,8 +772,8 @@ public class Atlas implements Serializable {
     public double lerpElevation(int xPx, int zPx, int xBlock, int zBlock) {
         int x0 = xBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
         int z0 = zBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
-        double x = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
-        double z = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
+        double x = AtlasHelper.curp(((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE));
+        double z = AtlasHelper.curp(((zBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE));
         return MathHelper.lerp2(
                 x, z,
                 Visiwa.ATLAS.getY(xPx - 1 + x0, zPx - 1 + z0),
@@ -660,8 +784,8 @@ public class Atlas implements Serializable {
     public double lerpTemp(int xPx, int zPx, int xBlock, int zBlock) {
         int x0 = xBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
         int z0 = zBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
-        double x = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
-        double z = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
+        double x = AtlasHelper.curp(((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE));
+        double z = AtlasHelper.curp(((zBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE));
         return MathHelper.lerp2(
                 x, z,
                 Visiwa.ATLAS.getT(xPx - 1 + x0, zPx - 1 + z0),
@@ -672,8 +796,8 @@ public class Atlas implements Serializable {
     public double lerpHumidity(int xPx, int zPx, int xBlock, int zBlock) {
         int x0 = xBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
         int z0 = zBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
-        double x = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
-        double z = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
+        double x = AtlasHelper.curp(((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE));
+        double z = AtlasHelper.curp(((zBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE));
         return MathHelper.lerp2(
                 x, z,
                 Visiwa.ATLAS.getH(xPx - 1 + x0, zPx - 1 + z0),
@@ -684,8 +808,8 @@ public class Atlas implements Serializable {
     public double lerpWeirdness(int xPx, int zPx, int xBlock, int zBlock) {
         int x0 = xBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
         int z0 = zBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
-        double x = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
-        double z = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
+        double x = (((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE));
+        double z = (((zBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE));
         return MathHelper.lerp2(
                 x, z,
                 Visiwa.ATLAS.getW(xPx - 1 + x0, zPx - 1 + z0),
@@ -693,12 +817,11 @@ public class Atlas implements Serializable {
                 Visiwa.ATLAS.getW(xPx - 1 + x0, zPx + z0),
                 Visiwa.ATLAS.getW(xPx + x0, zPx + z0));
     }
-
     public double lerpErosion(int xPx, int zPx, int xBlock, int zBlock) {
         int x0 = xBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
         int z0 = zBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
-        double x = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
-        double z = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
+        double x = AtlasHelper.curp(((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE));
+        double z = AtlasHelper.curp(((zBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE));
         return MathHelper.lerp2(
                 x, z,
                 Visiwa.ATLAS.getE(xPx - 1 + x0, zPx - 1 + z0),
@@ -709,8 +832,8 @@ public class Atlas implements Serializable {
     public double lerpContinentalness(int xPx, int zPx, int xBlock, int zBlock) {
         int x0 = xBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
         int z0 = zBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
-        double x = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
-        double z = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
+        double x = AtlasHelper.curp(((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE));
+        double z = AtlasHelper.curp(((zBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE));
         return MathHelper.lerp2(
                 x, z,
                 Visiwa.ATLAS.getC(xPx - 1 + x0, zPx - 1 + z0),
@@ -718,12 +841,11 @@ public class Atlas implements Serializable {
                 Visiwa.ATLAS.getC(xPx - 1 + x0, zPx + z0),
                 Visiwa.ATLAS.getC(xPx + x0, zPx + z0));
     }
-
     public double lerpBiomeNoise(int xPx, int zPx, int xBlock, int zBlock) {
         int x0 = xBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
         int z0 = zBlock % VisiwaConfig.SCALE >= VisiwaConfig.SCALE / 2F ? 1 : 0;
-        double x = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
-        double z = AtlasHelper.lerpTransform((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE);
+        double x = (((xBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE));
+        double z = (((zBlock - VisiwaConfig.SCALE / 2F) % (VisiwaConfig.SCALE)) / ((float) VisiwaConfig.SCALE));
         return MathHelper.lerp2(
                 x, z,
                 Visiwa.ATLAS.getBiomeNoise(xPx - 1 + x0, zPx - 1 + z0),
